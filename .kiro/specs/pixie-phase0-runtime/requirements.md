@@ -1,0 +1,464 @@
+# Requirements Document
+
+## Introduction
+
+Phase 0 of Pixie turns this fork of `jaredrhod/fullstack-agent` into a persistent, Codex-powered personal assistant. Pixie accepts work through an interactive text chat and task commands, executes that work in a background runtime that outlives any client, retains tasks, schedules, conversation references, and results, and runs under Ubuntu systemd user-service management.
+
+The source of these requirements is `always-on-agent-prototype-plan.md` (sections 1-4, 6, and 7), covering work packages P0-01 to P0-10 and the section 4.12 acceptance criteria. Phase 1 (bilingual voice) is out of scope and appears only as a forward-compatibility constraint.
+
+Repository findings that shape the requirements:
+
+- The fork (origin `git@github.com:aabero/pixie-fullstack.git`) currently contains no application code. It holds a Claude Code installer boot file (`CLAUDE.md`), a conversational setup wizard (`fullstack-agent.md`), terminal launchers (`start.sh`, `start.bat`), update scripts (`update.sh`, `update.bat`), and documentation. The Python runtime, Codex adapter, SQLite store, scheduler, worker, CLI, chat client, systemd unit, setup/doctor scripts, and tests are net-new.
+- No `upstream` remote is configured, the working branch is `kiro-phase0`, and `always-on-agent-prototype-plan.md` is untracked.
+- The code is licensed AGPL-3.0-or-later, copyright Jared Rhodenizer. The license and attribution must be preserved.
+
+This document is a specification only. Nothing in it authorizes implementation, installation on the owner's computer, or changes to the owner's existing notes.
+
+## Glossary
+
+- **Pixie**: The assistant produced by this project; also the command prefix of its command-line tools.
+- **Runtime**: The persistent background process (`pixie-runtime.service`) that owns task execution, scheduling, persistence, approvals, and result delivery, independent of any client.
+- **Worker**: The Runtime component that claims queued attempts and executes them through the Codex_Adapter. Phase 0 provides one execution slot.
+- **Scheduler**: The Runtime component that evaluates schedules and enqueues due occurrences.
+- **Codex_Adapter**: The application-owned execution interface that wraps the selected Codex integration (SDK, app-server, or non-interactive CLI) and maps its events to Application_Events.
+- **Application_Event**: A Runtime-defined, timestamped event record (progress, state change, approval request, cancellation request, result).
+- **Store**: The SQLite database holding Conversations, Tasks, Schedules, Attempts, Events, Results, Deliveries, and Approvals.
+- **Task**: A persisted unit of work with a request, workspace, permission profile, and State.
+- **State**: The lifecycle state of a Task: `queued`, `running`, `awaiting_approval`, `blocked`, `succeeded`, `failed`, or `cancelled`.
+- **Attempt**: One execution try of a Task, with start and end times, backend references, a lease, a heartbeat, an outcome, and an error category.
+- **Schedule**: A persisted trigger definition (manual, one-off, or recurring) with a timezone, next due time, enabled flag, and missed-run policy.
+- **Occurrence**: One due instance of a Schedule, identified by the Schedule and its due time.
+- **Conversation**: A chat session with a persisted mapping to a Codex thread reference and associated Tasks.
+- **Chat_Client**: The `pixie chat` terminal client that connects to the Runtime.
+- **Task_CLI**: The non-conversational `pixie` subcommands for inspecting and controlling the Runtime.
+- **Approval**: A persisted request for user permission to perform an exact operation, together with its decision.
+- **Permission_Profile**: The working directory and set of allowed actions attached to a Task.
+- **Result**: The persisted summary, artifact paths, completion status, and output references of a finished Task.
+- **Delivery**: A persisted record of an attempt to notify the user of a Result, with channel, status, and last error.
+- **Vault**: The Markdown knowledge directory (adapted from ai-memory-vault) holding profile, preferences, daily notes, and job instructions.
+- **Vault_Template_Repo**: The adapted fork of `jaredrhod/ai-memory-vault` (`aabero/pixie-ai-memory-vault`), a prompts-and-templates repository without code, adapted in place and licensed CC BY-SA 4.0. It supplies the Vault templates (index, daily note, memory) and the optional personalization interview.
+- **Protected_Section**: A Vault section (profile bio, preferences, vault rules) that a Task may modify only with a granted Approval.
+- **Agent_Instructions**: The `AGENTS.md`-based boot instructions defining Pixie's identity and Vault pointers.
+- **Runtime_Home**: The directory outside the repository checkout where the Runtime keeps configuration, state, logs, and the Store.
+- **Setup_Script**: The deterministic script that installs and configures Phase 0.
+- **Doctor_Script**: The script that checks the installation and reports problems.
+- **Installer_Wizard**: The conversational setup file (`fullstack-agent.md`) and its boot file.
+- **Upstream**: The original repository `jaredrhod/fullstack-agent`.
+- **Reviewed_Revision**: A recorded commit identifier of an upstream repository or component that was inspected for this project.
+- **Operator**: The single human owner of the Pixie installation.
+- **Target_Platform**: Ubuntu Linux with systemd user services.
+
+## Requirements
+
+### Requirement 1: Codex integration spike
+
+**User Story:** As the Operator, I want the Codex integration validated before dependent work begins, so that the Runtime is built on a documented, working interface.
+
+#### Acceptance Criteria
+
+1. WHEN the spike (P0-01) is executed, THE Codex_Adapter SHALL run one bounded task from the intended service environment, complete it within 300 seconds, and record the outcome (success, failure, or timeout), the task input, the final result, and the start and end timestamps in the spike report.
+2. THE spike report SHALL record the exact Codex SDK, app-server, or CLI version used (full version identifier) and the dependency pinning method (the mechanism that fixes that exact version).
+3. THE spike report SHALL record, for each of the following, the mechanism used and the observed result from at least one executed run: starting execution, streaming events, retaining thread references, retrieving results, and interrupting an active run.
+4. WHEN the spike interrupts an active run, THE Codex_Adapter SHALL stop the run within 10 seconds and the spike report SHALL record the run's final state and whether the thread reference remains usable afterward.
+5. WHEN the spike triggers an approval request, THE spike report SHALL record how the request surfaces to the Runtime, and, WHILE no user is connected, THE spike report SHALL record the observed worker behavior (waits, denies, or fails) and the elapsed time before that behavior occurs.
+6. IF expired authentication, network failure, or a usage limit is reproduced or simulated during the spike, THEN THE spike report SHALL record for each condition how it appears to the Runtime (the observable signal or error indication) and whether the thread state is preserved. IF a condition cannot be reproduced or simulated, THEN THE spike report SHALL mark it "not verified" with the reason.
+7. IF the preferred integration cannot provide a required behavior listed in criteria 3 through 6, THEN THE spike report SHALL document the limitation and name another documented interface before any workaround is implemented.
+8. THE spike report SHALL record whether the chosen authentication route is subscription-based or API-billed, the account eligibility requirements, the usage limits (with units and period), and the billing implications (cost model and who is billed).
+
+### Requirement 2: Codex execution adapter
+
+**User Story:** As the Operator, I want task execution to go through an application-owned interface, so that the Runtime does not depend on Claude Code and the Codex integration can be replaced.
+
+#### Acceptance Criteria
+
+1. THE Codex_Adapter SHALL expose application-level operations to submit a Task for execution, subscribe to Application_Events for a submitted Task, request cancellation of a submitted Task, and retrieve the final result of a Task, without requiring callers to reference any Codex-specific or Claude-specific type.
+2. WHEN Codex emits an event of a supported type, THE Codex_Adapter SHALL map it to exactly one Application_Event, preserving the event order in which Codex emitted it, and deliver it to subscribers within 1 second of receipt.
+3. WHEN Codex emits an event of an unsupported type, THE Codex_Adapter SHALL record an unmapped Application_Event containing the raw type name and continue execution of the Task without changing the Task state.
+4. WHEN Codex emits an event that is malformed and cannot be parsed, THE Codex_Adapter SHALL record an Application_Event indicating a parse failure, retain the raw payload truncated to 10,000 characters, and continue execution of the Task.
+5. WHEN an Attempt starts, THE Codex_Adapter SHALL persist the mapping among Task identifier, Attempt identifier, Codex thread reference, and Codex turn reference, and SHALL update the turn reference each time a new turn begins.
+6. IF persisting the mapping fails, THEN THE Codex_Adapter SHALL report the failure to the Runtime, mark the Attempt as failed, and make no further Codex submissions for that Attempt.
+7. THE Worker SHALL execute Tasks while neither Claude Code nor the Claude Agent SDK is installed in the runtime environment.
+8. THE Codex_Adapter SHALL authenticate through the supported Codex authentication mechanism without reading tokens from Codex credential stores and without writing credential values to any repository file.
+9. IF Codex authentication is missing, expired, or rejected, THEN THE Codex_Adapter SHALL fail the submission within 30 seconds, report an authentication failure to the Runtime without including credential values, and leave the Task in its pre-submission state.
+10. WHEN a stored Codex thread is restored, THE Runtime SHALL treat the thread contents as context only and SHALL NOT mark any external action as completed unless a recorded Application_Event or verification result for that action exists independently of the thread.
+
+### Requirement 3: Identity and memory instructions
+
+**User Story:** As the Operator, I want Pixie to load its identity and my approved preferences on every execution, so that it behaves consistently across tasks.
+
+#### Acceptance Criteria
+
+1. WHEN the Setup_Script runs, THE Setup_Script SHALL install Agent_Instructions from a template that defines the assistant name Pixie and the Vault pointers.
+2. WHEN a new execution starts, THE Runtime SHALL provide the Agent_Instructions to Codex before Codex processes the first Task prompt of that execution.
+3. IF the Agent_Instructions cannot be read when a new execution starts, THEN THE Runtime SHALL NOT start the execution, SHALL mark the Task as failed, and SHALL notify the Operator with an error indicating that the Agent_Instructions are unavailable.
+4. WHEN a new Task is executed, THE Runtime SHALL make approved preferences from the configured Vault available to that execution before Codex processes the first Task prompt.
+5. IF the configured Vault is missing or unreadable when a new Task is executed, THEN THE Runtime SHALL start the execution without preferences, SHALL notify the Operator with a warning indicating that the Vault is unavailable, and SHALL leave the Vault contents unchanged.
+6. IF an `AGENTS.md` file already exists at the installation target, THEN THE Setup_Script SHALL leave the existing file byte-for-byte unchanged and SHALL write the Pixie template to a separate path distinct from the installation target.
+7. WHEN an execution requests a write to shared Vault knowledge while another execution holds the Vault write, THE Runtime SHALL queue the request and SHALL begin it only after the earlier write completes, so that no two executions write the Vault at the same time.
+8. IF a queued Vault write has not started within 60 seconds, THEN THE Runtime SHALL abandon the write, SHALL leave the Vault contents unchanged, and SHALL report a failure indicating a Vault write timeout to the requesting execution.
+9. WHEN a Task is created from a Conversation, THE Runtime SHALL start a Codex context that is separate from the contexts of all other Tasks and SHALL provide to it only the request text and the Conversation messages selected as relevant to that request.
+10. THE Agent_Instructions and the Vault templates installed by the Setup_Script SHALL contain no interactive-only rules, including rules that require stopping after asking a question, waiting for confirmation before editing, never suggesting to stop, or ending a reply with a forward question.
+11. THE Runtime SHALL handle every request for permission to act only through the Approval mechanism defined in Requirement 8, and THE Agent_Instructions SHALL NOT define any other approval path.
+12. WHEN the Setup_Script runs, THE Setup_Script SHALL create the Vault folder structure, index notes, templates, and frontmatter conventions deterministically and without any interview, and THE personalization interview SHALL remain optional and SHALL NOT be authoritative for any Vault content or Runtime configuration.
+13. WHEN a new Task is executed, THE Runtime SHALL read approved preferences only from the designated preferences section of the Vault index.
+14. IF a Task attempts to modify a Protected_Section of the Vault without a granted Approval, THEN THE Runtime SHALL block the modification, create an Approval for the exact change under Requirement 8, and leave the Protected_Section unchanged.
+15. THE Runtime SHALL read the Vault path from exactly one authoritative configuration entry in the Runtime_Home configuration, and every other consumer of the Vault path (Setup_Script, Doctor_Script, Agent_Instructions, and Task_CLI) SHALL derive the path from that entry.
+
+### Requirement 4: Durable task store
+
+**User Story:** As the Operator, I want tasks, schedules, and results to survive client closure and restarts, so that accepted work is never lost.
+
+#### Acceptance Criteria
+
+1. THE Store SHALL persist Conversations, Tasks, Schedules, Attempts, Events, Results, Deliveries, and Approvals in SQLite.
+2. WHEN the Runtime starts, THE Store SHALL apply all pending versioned schema migrations in ascending version order, each within a single transaction, and record the applied schema version after each migration succeeds.
+3. IF a schema migration fails, THEN THE Runtime SHALL roll back that migration, leave the recorded schema version unchanged, refuse to start, and report an error identifying the failed migration version.
+4. WHEN a State transition is requested and permitted by the lifecycle, THE Store SHALL commit the State change and the corresponding Event in a single transaction, so that either both are persisted or neither is.
+5. WHEN the Runtime restarts, whether after a normal shutdown, client closure, or abnormal termination, THE Store SHALL retain all records committed before the restart, with no partial State transitions visible.
+6. IF a requested State transition is not permitted by the lifecycle, THEN THE Store SHALL reject the transition, return an error indicating the current State and the requested State, leave the Task unchanged, and record no Event for the transition.
+7. THE Runtime SHALL keep the Store under the Runtime_Home, outside the repository checkout.
+8. IF the Store schema version is newer than the highest version the Runtime supports, THEN THE Runtime SHALL refuse to start without modifying the Store, and report an error indicating both the Store schema version and the highest supported version.
+
+### Requirement 5: Task lifecycle
+
+**User Story:** As the Operator, I want clear task states, so that I can tell what Pixie is doing and why.
+
+#### Acceptance Criteria
+
+1. THE Runtime SHALL represent every Task in exactly one State from `queued`, `running`, `awaiting_approval`, `blocked`, `succeeded`, `failed`, and `cancelled` at any point in time.
+2. WHEN a Task reaches `succeeded`, `failed`, or `cancelled`, THE Runtime SHALL treat the Task as terminal, reject any further State transition request for that Task, leave the Task State unchanged, and return an error to the caller indicating the Task is terminal.
+3. WHEN the Operator requests cancellation of a Task that is not terminal, THE Store SHALL record the cancellation request, including the request time, separately from the Task State, within 1 second of the request.
+4. IF the Operator requests cancellation of a Task that is already terminal, THEN THE Runtime SHALL reject the request, leave the Task State unchanged, and return an error to the Operator indicating the Task is terminal.
+5. WHEN the backend acknowledges the cancellation outcome, THE Runtime SHALL set the Task State to `cancelled` if the work was stopped, or to `succeeded` or `failed` if the Task completed before cancellation took effect, and THE Store SHALL record the work already performed before the State changes.
+6. IF the backend does not acknowledge a cancellation request within 30 seconds, THEN THE Runtime SHALL keep the Task in its current State, retain the recorded cancellation request, and surface to the Operator that cancellation is pending.
+7. IF Codex authentication has expired, THEN THE Runtime SHALL set the affected Task to `blocked` with an error category of `authentication` and a message telling the Operator that re-authentication is required.
+8. IF a usage limit prevents execution, THEN THE Runtime SHALL set the affected Task to `blocked` with an error category of `usage_limit` and a message telling the Operator which limit was reached and, when known, when it resets.
+9. IF a network failure prevents execution and the failure persists after 3 retry attempts, THEN THE Runtime SHALL set the affected Task to `failed` with an error category of `network` and a message telling the Operator the action to take, and THE Store SHALL retain the Task's recorded progress.
+
+### Requirement 6: Scheduling
+
+**User Story:** As the Operator, I want Pixie to run work at scheduled times without an open terminal, so that recurring briefings and checks happen on their own.
+
+#### Acceptance Criteria
+
+1. THE Scheduler SHALL support exactly three Schedule types: manual (runs only when the Operator triggers it), one-off (runs once at a single specified date and time), and recurring (runs repeatedly according to a single recurrence rule).
+2. THE Scheduler SHALL compute each Occurrence's due time in the Schedule's explicit timezone, using IANA timezone identifiers, including correct handling of daylight-saving transitions.
+3. WHERE the Operator does not specify a timezone for a Schedule, THE Scheduler SHALL use the configured default timezone, which defaults to America/Montevideo.
+4. WHEN an Occurrence becomes due, THE Scheduler SHALL enqueue exactly one Task for that Occurrence within 5 seconds of its due time while the Runtime is running.
+5. IF the Scheduler evaluates the same Occurrence more than once, THEN THE Scheduler SHALL enqueue a Task for it only once and SHALL NOT create duplicate Tasks.
+6. WHEN the Runtime starts after downtime, THE Scheduler SHALL apply each Schedule's missed-run policy to Occurrences that were due during the downtime, where the policy "skip" enqueues no Task for missed Occurrences and the policy "catch up" enqueues exactly one Task per missed Occurrence, in due-time order.
+7. THE Scheduler SHALL persist Schedules, including their type, recurrence rule, timezone, missed-run policy, and the record of Occurrences already enqueued, so that they survive Runtime restarts without loss.
+8. IF the Scheduler fails to persist a Schedule, THEN THE Scheduler SHALL reject the create or update request, SHALL indicate the failure to the Operator with an error stating the Schedule was not saved, and SHALL leave previously saved Schedules unchanged.
+9. WHEN a scheduled Task becomes due, THE Worker SHALL execute it without a terminal or client connected.
+10. THE Scheduler SHALL create recurring and one-off Occurrences only from Schedules the Operator created and SHALL NOT invoke the model on its own initiative outside of executing a Task enqueued from an Operator-created Schedule.
+
+### Requirement 7: Worker execution and recovery
+
+**User Story:** As the Operator, I want the worker to run one task at a time and recover safely after interruptions, so that crashes do not cause lost or duplicated external actions.
+
+#### Acceptance Criteria
+
+1. THE Worker SHALL execute at most one Attempt at a time.
+2. WHEN the Worker claims an Attempt, THE Worker SHALL record a lease with an expiry of 60 seconds from the claim time and SHALL refresh the heartbeat every 15 seconds, extending the lease expiry to 60 seconds from each refresh, until the Attempt reaches a terminal outcome.
+3. IF an Attempt runs longer than its configured timeout (default 300 seconds, allowed range 1 to 3600 seconds), THEN THE Worker SHALL request cancellation of the Attempt, record the Attempt outcome as `timed_out`, and preserve all data recorded by the Attempt up to that point.
+4. WHEN the Runtime starts, THE Runtime SHALL identify every Attempt in a running state whose lease expiry is earlier than the current time, mark each as stale, and reconcile each one according to criteria 5, 6, and 7 before the Worker claims any new Attempt.
+5. WHEN a stale Attempt is repeatable and has no recorded external action, THE Runtime SHALL re-queue its Task as a new Attempt, provided the number of retries already performed is below the configured maximum retries (default 3, allowed range 0 to 10).
+6. IF a stale Attempt may have performed an external action (an external action is recorded, or the Attempt is not repeatable), THEN THE Runtime SHALL set the Task to `blocked`, record the reason as possible external action, not re-queue the Task, and prevent any retry until the Operator has explicitly approved it.
+7. IF the number of retries performed for a Task equals the configured maximum retries when reconciliation or failure handling would otherwise re-queue it, THEN THE Runtime SHALL set the Task to `failed`, record the error category of the last failed Attempt, and not create a further Attempt.
+8. WHEN the Runtime receives a shutdown signal, THE Worker SHALL stop claiming new Attempts immediately, and SHALL record any in-flight Attempt as interrupted for reconciliation within 10 seconds of receiving the signal, leaving its lease unrefreshed so that it is reconciled under criteria 4 to 7 on the next start.
+9. IF recording the lease, a heartbeat refresh, or a reconciliation outcome fails, THEN THE Worker SHALL stop executing the current Attempt, SHALL NOT claim a new Attempt, and SHALL report an error indicating the persistence failure to the Operator.
+
+### Requirement 8: Permissions and approvals
+
+**User Story:** As the Operator, I want Pixie to ask before taking consequential actions, so that background work stays within limits I set.
+
+#### Acceptance Criteria
+
+1. WHEN a Task is created, THE Runtime SHALL attach to the Task one working directory expressed as an absolute path and exactly one Permission_Profile, and SHALL reject creation of a Task that lacks either value with an error indicating which value is missing, leaving no Task persisted.
+2. THE Runtime SHALL permit, by default, reads and writes only to result files located within the Task's working directory, with a maximum size of 10 MB per file and a maximum of 100 files per Task.
+3. IF a Task attempts a read or write outside its working directory or beyond the limits in criterion 2 and the operation is not covered by its Permission_Profile or a recorded preauthorization, THEN THE Runtime SHALL block the operation, create an Approval for the exact operation, and set the Task to `awaiting_approval`.
+4. WHEN a Task requires an external change not covered by its Permission_Profile or a recorded preauthorization, THE Runtime SHALL, within 2 seconds, create exactly one Approval that identifies the exact operation (operation type, target, and parameters), set the Task to `awaiting_approval`, and not perform the operation until the Approval is granted.
+5. WHEN the Operator answers an Approval with grant or deny, THE Runtime SHALL record the decision, the answering client type, and the timestamp against that exact Approval, apply the decision only to the operation named in that Approval, and, if granted, resume the Task within 5 seconds.
+6. IF an Approval has already been answered and a further answer is submitted for it, THEN THE Runtime SHALL reject the further answer with an error indicating the Approval is already resolved and SHALL keep the original decision unchanged.
+7. WHILE no Chat_Client or Task_CLI is connected to answer an Approval, THE Runtime SHALL keep the Task in `awaiting_approval`, SHALL keep the Approval pending with no time-based expiry, and SHALL NOT grant the Approval.
+8. IF an Approval is denied, THEN THE Runtime SHALL NOT perform the operation, SHALL record the denial as a Task Event that references the Approval, and SHALL set the Task to a non-running state (`failed` or `blocked`) within 5 seconds, unless the Task has other work not dependent on the denied operation.
+9. THE Runtime SHALL process Approval answers from Chat_Client and Task_CLI through the same Approval mechanism, such that an identical answer from either client produces the same recorded decision and the same Task state transition.
+
+### Requirement 9: Ubuntu service management
+
+**User Story:** As the Operator, I want Pixie to run as a managed service, so that it starts, restarts, and stops predictably.
+
+#### Acceptance Criteria
+
+1. WHEN the Operator runs the Setup_Script, THE Setup_Script SHALL install `pixie-runtime.service` as a systemd user service whose unit file specifies absolute paths for the Runtime executable, the working directory, and the configuration file.
+2. WHEN systemd starts `pixie-runtime.service`, THE service SHALL start the Runtime without reading any interactive shell startup file, and the Runtime SHALL reach a running state within 30 seconds.
+3. THE Runtime SHALL start, run, and stop without requiring the Chat_Client, the Task_CLI, or any graphical client to be running, and stopping or crashing any of those clients SHALL leave the Runtime process running.
+4. IF the Runtime process exits with a non-zero status or is terminated by a signal other than an Operator-issued stop, THEN THE service SHALL restart the Runtime after a delay that starts at 2 seconds and doubles on each consecutive failure up to a maximum of 60 seconds.
+5. IF the Runtime exits because of a configuration error, THEN THE service SHALL write a log entry identifying the invalid or missing configuration item, and SHALL stop restarting after 5 consecutive failed starts within 300 seconds, leaving the service in a failed state visible in the status command output.
+6. THE documentation SHALL list the exact commands to start, stop, restart, show status, and follow logs for `pixie-runtime.service`, and SHALL state the expected observable result of each command.
+7. WHERE user lingering is enabled, THE Runtime SHALL start at boot without any user login and SHALL keep running after the Operator logs out of all sessions.
+8. IF user lingering is unavailable, THEN THE documentation SHALL state that the Runtime stops at logout and does not start until login, AND the verification result SHALL record the logout-persistence and boot-before-login criteria as not met.
+9. THE documentation SHALL state that background availability requires the machine to be powered on and not suspended or hibernated.
+10. WHEN the Operator issues the stop command, THE service SHALL terminate the Runtime within 30 seconds, and the service SHALL NOT restart it.
+
+### Requirement 10: Local runtime transport and client detachment
+
+**User Story:** As the Operator, I want clients to connect to a single runtime securely, so that closing a client never cancels my work.
+
+#### Acceptance Criteria
+
+1. THE Runtime SHALL accept client connections only through a local transport that is accessible solely to the Operator's operating system user and is not reachable from any network interface.
+2. IF a connection attempt originates from a different operating system user or from a network interface, THEN THE Runtime SHALL reject the connection within 1 second and SHALL NOT process any request from it.
+3. THE Chat_Client and Task_CLI SHALL perform all task operations through the Runtime and SHALL NOT start unmanaged Codex executions.
+4. WHEN a client disconnects or closes, whether normally or abnormally, THE Runtime SHALL continue every accepted Task without changing its state and SHALL retain its recorded progress and results.
+5. IF the Runtime is stopped or unreachable, THEN THE Chat_Client and Task_CLI SHALL report within 5 seconds an error indicating the Runtime is unavailable, SHALL exit Task_CLI with a non-zero exit code, and SHALL NOT run a separate assistant process.
+6. WHEN the Operator requests cancellation of an unfinished conversational turn, THE Runtime SHALL stop only that turn and SHALL leave every persisted Task unchanged.
+7. WHEN the Operator requests cancellation of a persisted Task by its identifier, THE Runtime SHALL transition that Task to a cancelled state and SHALL NOT alter any conversational turn or any other Task.
+
+### Requirement 11: Interactive text chat
+
+**User Story:** As the Operator, I want to converse with Pixie in a terminal, so that I can ask questions and delegate work naturally.
+
+#### Acceptance Criteria
+
+1. WHEN the Operator runs `pixie chat`, THE Chat_Client SHALL connect to the Runtime within 5 seconds, open or resume a Conversation, and display the identifier of the selected Conversation before accepting the first message.
+2. IF the Chat_Client cannot connect to the Runtime within 5 seconds, THEN THE Chat_Client SHALL display an error indicating the Runtime is unreachable, create no Conversation, and exit with a non-zero exit code.
+3. WHEN the Operator sends a message, THE Chat_Client SHALL display the reply incrementally as each streamed segment is received from Codex, with the first segment shown within 1 second of its receipt by the Chat_Client.
+4. IF the reply stream from Codex fails or is interrupted before completion, THEN THE Chat_Client SHALL retain the partial reply already displayed, display an error indicating the reply was incomplete, and accept the next Operator message.
+5. WHEN the Operator sends a follow-up message, THE Runtime SHALL generate the reply using the prior messages of the same Conversation as context.
+6. WHEN the Operator asks to start a new Conversation, THE Chat_Client SHALL create a new Conversation with a distinct identifier, display that identifier, and leave all earlier Conversations and their messages unchanged.
+7. WHEN the Operator runs `pixie chat` and a previous Conversation with a persisted thread reference exists, THE Chat_Client SHALL offer to resume that Conversation and SHALL resume it only if the Operator accepts.
+8. THE Runtime SHALL process turns within a single Conversation one at a time in the order received, and SHALL NOT start a turn until the preceding turn in that Conversation has completed or failed.
+9. WHILE the Worker is executing a Task, THE Chat_Client SHALL accept Operator input and respond to status requests and Approval answers, with each response displayed within 2 seconds of the request.
+10. IF a conversational turn cannot start immediately, THEN THE Chat_Client SHALL display a queued or waiting indicator, including the turn's position in the queue where known, within 1 second, and SHALL remove the indicator when the turn starts.
+11. WHEN a Task update arrives while chat is connected, THE Chat_Client SHALL display the update as a distinct entry within 2 seconds, without removing or altering any message already displayed and without interrupting a reply that is streaming.
+12. WHEN the Operator reconnects, THE Chat_Client SHALL display the count of unread Results and a way to list them, and SHALL mark a Result as read only after the Operator has viewed it.
+
+### Requirement 12: Chat-to-task registration
+
+**User Story:** As the Operator, I want Pixie's confirmation of a task to mean it is really saved, so that I can trust delegated work.
+
+#### Acceptance Criteria
+
+1. WHEN the Operator sends a chat message that delegates work, THE Runtime SHALL create the Task or Schedule through a structured Runtime operation and SHALL NOT create it from free-text reply content.
+2. WHEN the Store has committed the Task or Schedule record, THE Chat_Client SHALL display a confirmation of acceptance within 2 seconds of the commit.
+3. IF the Store fails to commit the Task or Schedule record, or the commit is not confirmed within 10 seconds, THEN THE Chat_Client SHALL display an error indicating the work was not registered, SHALL NOT display a confirmation of acceptance, and THE Runtime SHALL leave no partial record in the Store.
+4. WHEN a Task is accepted, THE Chat_Client SHALL display its Task identifier in the same message as the confirmation of acceptance.
+5. WHEN a Schedule is accepted, THE Chat_Client SHALL display the interpreted schedule (recurrence or next run time) and its IANA timezone name in the same message as the confirmation of acceptance.
+6. IF the scheduling intent is ambiguous (the message lacks a resolvable time, recurrence, or timezone, or admits more than one interpretation), THEN THE Chat_Client SHALL ask one clarifying question, THE Runtime SHALL NOT create a Schedule, and THE Store SHALL contain no new Schedule record for that message.
+7. WHEN the Runtime creates a delegated Task, THE Runtime SHALL store the identifier of the originating Conversation on the Task record, and every delegated Task SHALL have exactly one originating Conversation.
+8. IF a conversational reply states that a Task or Schedule was registered and the Store contains no corresponding committed record, THEN THE Runtime SHALL be considered non-conforming, and automated tests SHALL fail when this condition occurs.
+
+### Requirement 13: Task commands
+
+**User Story:** As the Operator, I want direct commands to inspect and control Pixie, so that I can manage work without a conversation.
+
+#### Acceptance Criteria
+
+1. WHEN the Operator runs `pixie status`, `pixie tasks list`, `pixie tasks show <task-id>`, `pixie results latest`, `pixie approvals list`, or `pixie schedule list`, THE Task_CLI SHALL read the requested data from the Store, print it to standard output, and exit with status zero within 2 seconds when the Store holds up to 1,000 Tasks.
+2. WHEN the Operator runs a Task_CLI command to submit a Task, create or modify a Schedule, approve or deny a pending Approval, or cancel a Task, THE Task_CLI SHALL apply the change to the Store and exit with status zero after the Store has committed it.
+3. THE Task_CLI and Chat_Client SHALL show identical Tasks, Approvals, and Results, with identical field values, when each reads the Store at the same point in time.
+4. WHEN the Operator submits a Task through the Task_CLI, THE Task_CLI SHALL display its Task identifier only after the Store has committed the Task.
+5. IF the Operator names a Task identifier that does not exist, THEN THE Task_CLI SHALL print an error message indicating the Task was not found, make no change to the Store, and exit with a non-zero status.
+6. IF a Task_CLI command fails because the Store is unavailable, a commit fails, or an argument is missing or malformed, THEN THE Task_CLI SHALL print an error message indicating the cause, leave the Store unchanged, and exit with a non-zero status.
+7. IF the Operator approves, denies, or cancels an Approval or Task that is not in a state permitting that action (for example, an Approval already decided or a Task already completed), THEN THE Task_CLI SHALL print an error message indicating the current state, leave the Store unchanged, and exit with a non-zero status.
+8. IF a list command finds no matching records, THEN THE Task_CLI SHALL print a message indicating that no records exist and exit with status zero.
+
+### Requirement 14: Result delivery
+
+**User Story:** As the Operator, I want results saved and surfaced reliably, so that I can find them even if a notification fails.
+
+#### Acceptance Criteria
+
+1. WHEN a Task finishes, THE Runtime SHALL persist the Result to durable storage and confirm the write succeeded before attempting any Delivery.
+2. IF persisting the Result fails, THEN THE Runtime SHALL skip all Delivery attempts, record a persistence error indicating the failure cause on the Task, and leave the Task State unchanged.
+3. WHERE desktop notifications are enabled and a graphical session is available, THE Runtime SHALL attempt one desktop notification within 5 seconds of Result persistence and record the Delivery status as either delivered or failed.
+4. IF notification delivery fails, a graphical session is unavailable, or the notification attempt does not complete within 10 seconds, THEN THE Runtime SHALL keep the Result unchanged, record the Delivery status as failed together with the last error text, and leave the Task State unchanged.
+5. THE Runtime SHALL limit each notification payload to a title of at most 80 characters and a body of at most 200 characters, and SHALL limit the body to the Task identifier, the final Task State, and a truncated Result summary that excludes Task input, file contents, credentials, and environment values.
+6. WHEN the Runtime restarts, THE Runtime SHALL make all previously persisted Results and their Delivery statuses retrievable through chat and Task_CLI, listed in order of Result creation time from newest to oldest.
+
+### Requirement 15: Secrets handling
+
+**User Story:** As the Operator, I want credentials kept out of tracked files and logs, so that they do not leak.
+
+#### Acceptance Criteria
+
+1. THE Runtime SHALL store credentials only in the Runtime_Home and SHALL NOT write credential values to any file tracked by the repository.
+2. WHEN the Runtime builds a prompt, produces a Result summary, emits an Event, or writes a log entry, THE Runtime SHALL replace every configured credential value appearing in that output with a redaction placeholder before the output is stored, transmitted, or displayed.
+3. THE repository SHALL track only example configuration files that contain placeholder values in place of credentials, and SHALL keep personal configuration, state, and credentials in the Runtime_Home.
+4. WHERE the Runtime_Home resides within the repository checkout during development, THE `.gitignore` SHALL exclude all files and subdirectories of the Runtime_Home so that `git status` lists none of them as untracked or modified.
+5. IF a credential value is detected in a prompt, Result summary, Event, or log entry after redaction has been applied, THEN THE Runtime SHALL discard the unredacted output, SHALL record an error indicating that a credential leak was blocked without including the credential value, and SHALL leave the stored credential unchanged.
+6. IF the Runtime cannot read a required credential from the Runtime_Home, THEN THE Runtime SHALL refuse to start the dependent operation, SHALL report an error naming the missing credential key but not its value, and SHALL NOT fall back to reading the credential from a tracked repository file.
+
+### Requirement 16: Reproducible setup
+
+**User Story:** As the Operator, I want a deterministic, repeatable installation, so that I can rebuild or update Pixie without losing data.
+
+#### Acceptance Criteria
+
+1. THE Setup_Script SHALL define all installation steps, and THE Installer_Wizard SHALL invoke the Setup_Script to perform installation without implementing any installation step itself.
+2. THE Setup_Script SHALL install only Phase 0 dependencies by default and SHALL NOT install Backtalk models, audio packages, or visual components.
+3. WHEN the Setup_Script completes an installation, THE Setup_Script SHALL record, for each installed component, its remote location, its Reviewed_Revision, and the exact version of each dependency installed.
+4. WHEN the Setup_Script is run on an existing installation, THE Setup_Script SHALL leave existing configuration files, Vault contents, and Store data byte-identical to their state before the run, except for changes made by a displayed and applied configuration migration.
+5. WHEN a configuration migration is required, THE Setup_Script SHALL display the full list of configuration changes (each key added, changed, or removed, with old and new values) before applying any change.
+6. WHEN the Operator runs the Doctor_Script, THE Doctor_Script SHALL check the Runtime service, Store version, configuration, Codex authentication state, and Vault path, and SHALL report a pass or fail result with a reason for each of the five checks within 30 seconds.
+7. IF one or more Doctor_Script checks fail, THEN THE Doctor_Script SHALL still report the result of every remaining check and SHALL exit with a non-zero status.
+8. IF a Setup_Script prerequisite is missing, THEN THE Setup_Script SHALL stop before modifying any file, name each missing prerequisite, and exit with a non-zero status.
+9. THE Setup_Script SHALL NOT install, register, or configure Obsidian, and SHALL NOT read or modify any Obsidian configuration, including `obsidian.json` and any `.obsidian` folder.
+10. THE Vault SHALL be usable as plain Markdown files without Obsidian, and THE Doctor_Script SHALL NOT require Obsidian to be present and SHALL NOT fail any check because Obsidian is absent.
+
+### Requirement 17: Version-aware updates
+
+**User Story:** As the Operator, I want updates to be explicit, so that my adaptations are not silently replaced.
+
+#### Acceptance Criteria
+
+1. WHEN the Operator starts an update, THE update procedure SHALL fetch only from the configured forks and SHALL apply only the component versions recorded in the version manifest.
+2. IF an update would move any component to a version different from its recorded version, THEN THE update procedure SHALL display the component name, the current version, and the target version, and SHALL wait for explicit Operator confirmation (yes/no) before applying that change.
+3. IF the Operator declines confirmation or does not respond within 300 seconds, THEN THE update procedure SHALL exit without modifying any component, SHALL leave all recorded versions unchanged, and SHALL report that no update was applied.
+4. WHEN an update is available, THE update procedure SHALL display the list of changed components and, for each one, the commit list between the current and target versions (with a count of changed files) before applying anything.
+5. WHEN an update is applied, THE update procedure SHALL leave Runtime_Home configuration, Store, Vault, and credentials byte-for-byte identical to their pre-update contents.
+6. IF an update fails for any component, THEN THE update procedure SHALL stop, SHALL restore every component to its pre-update version, SHALL leave Runtime_Home configuration, Store, Vault, and credentials unchanged, and SHALL report an error that identifies the failed component and the reason.
+7. WHEN an update is applied, THE update procedure SHALL leave all upstream attribution and license notice files and headers present and with unmodified content in every updated component.
+
+### Requirement 18: Repository disposition
+
+**User Story:** As the maintainer, I want a defined plan for each existing file, so that the fork is adapted without losing its provenance or the Operator's data.
+
+#### Acceptance Criteria
+
+1. THE project SHALL adapt `CLAUDE.md` and `fullstack-agent.md` into a single `AGENTS.md` at the repository root that contains a development rules section and a Pixie identity template section, and SHALL remove the Claude Code installer boot path from the Phase 0 flow.
+2. THE project SHALL adapt `README.md`, `TROUBLESHOOTING.md`, and `CONTRIBUTING.md` so that each file describes Pixie Phase 0, Codex, and the Ubuntu service lifecycle, and so that none of them references Claude Code as a prerequisite or setup path.
+3. THE project SHALL adapt `start.sh` and `update.sh` so that no voice, face, or hands launcher starts, stops, or restarts the Runtime, and so that the Runtime lifecycle is controlled only by the Ubuntu service.
+4. THE project SHALL remove the Claude Code prerequisite and the `claude "set me up"` setup path from the Phase 0 flow, so that a search of the Phase 0 documentation and scripts for "claude" outside the legacy location and upstream attribution returns zero matches.
+5. THE project SHALL replace the Desktop launcher flow, the blind pull-latest update, and the Claude-specific wiring (for example `backtalk.json` wiring) in the Phase 0 flow, so that the Phase 0 flow contains zero references to each of them and the update path fetches and shows the incoming changes to the Operator before applying any of them.
+6. THE project SHALL preserve the AGPL-3.0-or-later `LICENSE` file byte-for-byte, the copyright notice of Jared Rhodenizer, and upstream attribution in every adapted file.
+7. THE project SHALL NOT delete, overwrite, or move any Operator file, and SHALL NOT modify the Operator's configuration, state, or Vault, during adoption, install, or update.
+8. THE project SHALL preserve the separate license file of each component and the complete git history of the fork, with no history rewrite, squash, or force push of existing commits.
+9. THE project SHALL add a git remote named `upstream` pointing to `jaredrhod/fullstack-agent`, and SHALL record in a version-controlled file the Reviewed_Revision (git commit hash) of each reviewed repository, including `5bb159f` for this fork.
+10. THE project SHALL retain each original Claude-oriented file, in unmodified form, either in git history or in a directory named `legacy`, with a README in that directory stating the files are retained pending the Operator's removal decision, until the Operator decides to remove them.
+11. WHEN the Operator decides on the disposition of `always-on-agent-prototype-plan.md`, THE project SHALL commit or relocate the file in accordance with that decision.
+12. IF no Operator decision on `always-on-agent-prototype-plan.md` has been recorded, THEN THE project SHALL leave the file in its current location and SHALL NOT delete it.
+13. IF an adaptation step would delete, overwrite, or move an Operator file, THEN THE project SHALL abort that step, leave the file unchanged, and report to the Operator an error identifying the file and the step.
+14. THE project SHALL keep Vault_Template_Repo templates and any adapted Vault text licensed under CC BY-SA 4.0 with attribution to Jared Rhodenizer and share-alike preserved, SHALL keep them in their own license file separate from the AGPL-3.0-or-later license of the Runtime, and SHALL document the mixed licensing (AGPL Runtime, CC BY-SA templates) in the repository documentation.
+15. THE project SHALL replace, in the Phase 0 flow, the following Claude-specific Vault parts: the `templates/MEMORY.md` redirect, the `~/.claude/projects` memory migration, the Claude-as-executor framing of the wizard, and the shipped Jarvis identity (name, tone, and welcome line).
+16. THE project SHALL provide a Pixie identity block with a neutral default name, tone, and welcome line in place of the Jarvis identity.
+17. THE project SHALL record in a version-controlled file the Reviewed_Revisions `5bb159f` (fullstack-agent fork) and `659bba9` (Vault_Template_Repo fork).
+18. THE project SHALL adapt the Vault_Template_Repo in place as a template repository, and SHALL configure a git remote named `upstream` in that repository pointing to `https://github.com/jaredrhod/ai-memory-vault.git`.
+
+### Requirement 19: Verification and documentation
+
+**User Story:** As the maintainer, I want an automated and documented verification path, so that Phase 0 acceptance can be demonstrated.
+
+#### Acceptance Criteria
+
+1. THE project SHALL include automated tests covering every area listed in the Test Scope section, runnable from a single documented command that exits with code 0 when all tests pass and a non-zero code when any test fails.
+2. THE project SHALL include real Codex smoke tests for behavior that mocks cannot establish, each with a maximum runtime of 120 seconds, and each reporting a timeout as a failure instead of hanging.
+3. THE project SHALL include a manual verification procedure covering systemd service start, stop, and restart, user logout, and host reboot, where each step states the action to perform, the expected observable outcome, and a pass/fail recording field.
+4. THE project SHALL provide an operations runbook (`docs/operations.md`) that describes the end-to-end scenario as an ordered list of steps, each with the command to run and the expected observable result.
+5. WHEN the end-to-end scenario runs, THE verification result SHALL show, as separate pass/fail items, that a task scheduled through `pixie chat` executes after the client closes, delivers its Result or retains it when delivery is not possible, survives a service restart without losing the task or its Result, and appears in both chat history and Task_CLI history.
+6. IF a criterion cannot be verified or a known limitation exists, THEN THE verification result SHALL record that criterion as "unverified" or list it under known limitations, with the reason, and SHALL NOT count it as passed.
+7. IF an automated test, smoke test, or end-to-end scenario step fails, THEN THE verification result SHALL record the overall outcome as failed, identify the failing item, and retain the results of the items that did run.
+
+### Requirement 20: Phase 1 forward compatibility
+
+**User Story:** As the maintainer, I want Phase 0 to leave room for voice, so that Phase 1 reuses the same runtime without rework.
+
+#### Acceptance Criteria
+
+1. THE Runtime SHALL expose Conversation handling, task operations (create, list, get, cancel), approvals (list pending, approve, reject), and Result history (list, get) through a single client interface that the Phase 0 text client uses for 100% of its Runtime interactions.
+2. THE Runtime SHALL accept every operation listed in criterion 1 from any client that implements the client interface, without requiring changes to Runtime scheduler, Store, or memory code.
+3. THE Runtime SHALL remain the only process that reads or writes the scheduler state, the Store, and memory in all phases, and no client SHALL access them directly.
+4. WHEN two clients are connected to the Runtime at the same time, THE Runtime SHALL apply operations from both clients to the same scheduler, Store, and memory, and return results for each operation to the client that issued it.
+5. THE Phase 0 installation SHALL install, start, and complete all Phase 0 acceptance tests on a machine that has no microphone, no audio output device, and no transcription or speech libraries installed.
+6. THE Phase 0 Runtime source and dependency manifest SHALL contain zero modules, dependencies, or configuration options for audio capture, audio playback, transcription, speech synthesis, or visualizers.
+7. IF a client calls a voice, audio, transcription, or speech operation in Phase 0, THEN THE Runtime SHALL reject the call with an error indicating the operation is unsupported and leave the scheduler, Store, and memory unchanged.
+
+## Assumptions and Unresolved Decisions
+
+The following items are assumptions or open decisions. Each must be resolved or confirmed by the stated point, and the design phase SHALL NOT silently choose a value for them.
+
+| ID | Item | Current position | Resolve by |
+| --- | --- | --- | --- |
+| D1 | Component fork URLs and ownership (ai-memory-vault, Backtalk, ai-visualizer, Barehands) | PARTIALLY RESOLVED. Vault fork exists at `aabero/pixie-ai-memory-vault` (HEAD 659bba9, `upstream` set to `jaredrhod/ai-memory-vault`, nothing fetched). Backtalk, ai-visualizer, and Barehands forks are still unsupplied and not needed for Phase 0. | Before changing setup or update remotes for the remaining components |
+| D2 | Codex interface: Python SDK, app-server, or non-interactive CLI, and pinned versions | Python SDK proposed, unverified | Requirement 1 spike (P0-01) |
+| D3 | Authentication route and billing (subscription or API-billed) | Unverified | P0-01 |
+| D4 | Runtime language and storage | Python and SQLite proposed | Phase 0 design |
+| D5 | Logout and boot lifecycle (user lingering) | systemd user service proposed; lingering unverified | P0-06 |
+| D6 | First bounded real workflow for end-to-end verification | Not selected | Before end-to-end verification |
+| D7 | Vault location and whether ai-memory-vault is adapted in place or vendored | RESOLVED for adaptation: adapted in place as a template repository (Vault_Template_Repo). The Vault location itself is set in Runtime_Home configuration (Requirement 3.15). | Resolved |
+| D8 | Platform scope: Phase 0 targets Ubuntu with systemd, while existing scripts also support macOS and Windows | Assumed Linux-only for Phase 0. The macOS and Windows scripts remain untouched or marked legacy. Operator confirmation needed. | Before design |
+| D9 | Rename of the repository, directories, and references from `fullstack-agent` to Pixie | Not decided. The plan uses `fullstack-agent/` as the layout root. | Before the layout is created |
+| D10 | Disposition of the untracked `always-on-agent-prototype-plan.md` | Untracked on branch `kiro-phase0`. Commit, move to `docs/`, or keep local. | Before the first commit |
+| D11 | Local runtime transport (Unix domain socket or other user-restricted channel) | Not decided | Phase 0 design |
+| D12 | Handling of pre-existing Claude-era artifacts on the Operator's machine (a `CLAUDE.md` in a parent folder, existing vault) | Assumed untouched; never edited by Setup_Script | Before P0-08 |
+| D13 | Default values: timeouts, retry limit, heartbeat interval, backoff, missed-run default policy | Not specified in the plan | Phase 0 design |
+| D14 | Recurring schedule format (cron-like, interval, or other) | Not specified | Phase 0 design |
+| D15 | Desktop notification mechanism on Ubuntu | Not specified. Optional, must not block execution. | P0-07 design |
+| D16 | Permission_Profile model and preauthorization format | Only bounded local reads and result writes are defined | Phase 0 design |
+| D17 | Role of Obsidian | RESOLVED: optional in Phase 0, never installed, registered, or configured by setup (Requirement 16.9, 16.10). | Resolved |
+| D18 | License compatibility between the AGPL-3.0-or-later Runtime and CC BY-SA 4.0 templates | Assumed compatible when packaged as separate works with separate license files and documented mixed licensing (Requirement 18.14). Packaging and documentation approach needs Operator confirmation. | Before the first release of templates |
+| D19 | Whether the optional personalization interview wizard is kept for Codex in Phase 0 or deferred | Not decided. If kept, it is optional and non-authoritative (Requirement 3.12). | Before P0-03 |
+
+## Test Scope
+
+Test scope SHALL be proposed again in each implementation plan before behavior changes are made. The categories below define the baseline.
+
+### Automated checks (no real Codex)
+
+The Codex_Adapter is replaced by a fake that emits scripted events.
+
+- State transitions: the lifecycle permits only valid transitions and terminal states reject further changes (Requirement 5).
+- Scheduling: timezone handling for America/Montevideo, one-off and recurring due-time computation, missed-run skip and catch-up policies, and no duplicate enqueue of the same Occurrence (Requirement 6).
+- Restart recovery: stale lease reconciliation, bounded retry, and blocked state for possible external actions (Requirement 7).
+- Delivery persistence: a Result is saved before Delivery, and a failed Delivery leaves the Task State unchanged (Requirement 14).
+- Permission and approval enforcement: no silent grant, exact-operation binding, denial behavior, and the no-client case (Requirement 8).
+- Adapter event mapping: each supported event maps to one Application_Event, and unsupported events are recorded (Requirement 2).
+- Chat-to-task registration: confirmation follows a committed record, and ambiguous schedules create nothing (Requirement 12).
+- Conversation resumption and serialization of turns (Requirement 11).
+- Client detachment: disconnecting a client leaves accepted Tasks running (Requirement 10).
+- Setup idempotency: running the Setup_Script twice leaves configuration, Vault, and state unchanged (Requirement 16).
+- Store migrations and schema version refusal (Requirement 4).
+
+### Property-based testing candidates
+
+- Lifecycle state machine: for any sequence of transition requests, the Task State is always one of the seven States, and terminal States never change.
+- Scheduler idempotency: evaluating the same set of Schedules at the same instant any number of times enqueues each Occurrence exactly once.
+- Scheduler timezone invariant: the computed next due time is later than the reference time and is stable under repeated evaluation.
+- Recovery idempotency: running restart reconciliation twice produces the same Store state as running it once.
+- Setup idempotency: Setup_Script applied twice equals applied once on the resulting configuration.
+- Round trip: serializing and deserializing Application_Events, Schedules, and configuration files returns an equivalent object.
+- Event mapping: for any generated supported event, mapping is total and produces exactly one Application_Event.
+- Approval binding: for any generated pending Approvals and decisions, a decision affects only its own Approval.
+
+### Bounded real Codex smoke tests
+
+- A bounded task runs from the service environment and returns a recorded Result (Requirement 1).
+- Streaming, thread reference retention, and interruption behave as recorded in the spike.
+- An authentication or usage-limit failure produces the expected blocked or failed state, where it can be induced safely.
+- A new Task retrieves an approved preference from the configured Vault.
+
+Smoke tests are few, bounded in cost, and excluded from default test runs.
+
+### Manual and systemd verification
+
+- Service start, failure restart with backoff, shutdown, and log inspection.
+- Behavior after logout and after reboot, with and without lingering (Requirement 9).
+- Desktop notification delivery with and without a graphical session.
+- The end-to-end runbook scenario (Requirement 19).
+
+Verification that cannot be performed SHALL be recorded as unverified and not reported as passed.
+
+## Out of Scope
+
+The following items are excluded from Phase 0:
+
+- Voice: microphone access, transcription, speech generation, Spanish and English voice interaction, and any Backtalk changes. Only the forward-compatibility constraint in Requirement 20 applies.
+- The ai-visualizer and any custom visual design.
+- Barehands and gesture input.
+- Remote or mobile access and any public server.
+- Email, calendar, and other broad external integrations. Phase 0 validates one bounded local workflow only.
+- Deployment or installation on the Operator's computer, and any change that requires it.
+- Edits to the Operator's existing personal notes or existing Vault content.
+- macOS and Windows support for the new Runtime (subject to confirmation of decision D8).
+- Concurrent task execution beyond one Worker slot, and multi-user operation.
