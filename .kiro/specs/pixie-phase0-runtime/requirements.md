@@ -12,6 +12,8 @@ Repository findings that shape the requirements:
 - No `upstream` remote is configured, the working branch is `kiro-phase0`, and `always-on-agent-prototype-plan.md` is untracked.
 - The code is licensed AGPL-3.0-or-later, copyright Jared Rhodenizer. The license and attribution must be preserved.
 
+Platform scope: Phase 0 is Linux-only (Ubuntu with systemd user services), and the backend is Codex authenticated with the Operator's ChatGPT subscription (no API key). The existing macOS and Windows scripts stay untouched or are marked legacy. User-facing names change now (`pixie` command, `pixie-runtime.service`, assistant name Pixie); repository and directory names are kept. The Operator's machine is an Ubuntu laptop (native Ubuntu 26.04, Python 3.14.4, the `codex` CLI installed through nvm under Node 26, user lingering currently off). If the spike (Requirement 1) shows that the subscription route cannot support unattended execution, the scope is reviewed with the Operator before dependent work continues.
+
 This document is a specification only. Nothing in it authorizes implementation, installation on the owner's computer, or changes to the owner's existing notes.
 
 ## Glossary
@@ -36,7 +38,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 - **Result**: The persisted summary, artifact paths, completion status, and output references of a finished Task.
 - **Delivery**: A persisted record of an attempt to notify the user of a Result, with channel, status, and last error.
 - **Vault**: The Markdown knowledge directory (adapted from ai-memory-vault) holding profile, preferences, daily notes, and job instructions.
-- **Vault_Template_Repo**: The adapted fork of `jaredrhod/ai-memory-vault` (`aabero/pixie-ai-memory-vault`), a prompts-and-templates repository without code, adapted in place and licensed CC BY-SA 4.0. It supplies the Vault templates (index, daily note, memory) and the optional personalization interview.
+- **Vault_Template_Repo**: The adapted fork of `jaredrhod/ai-memory-vault` (`aabero/pixie-ai-memory-vault`), a prompts-and-templates repository without code, adapted in place and licensed CC BY-SA 4.0. It supplies the Vault templates (index, daily note, memory). The optional personalization interview is deferred out of Phase 0.
 - **Protected_Section**: A Vault section (profile bio, preferences, vault rules) that a Task may modify only with a granted Approval.
 - **Agent_Instructions**: The `AGENTS.md`-based boot instructions defining Pixie's identity and Vault pointers.
 - **Runtime_Home**: The directory outside the repository checkout where the Runtime keeps configuration, state, logs, and the Store.
@@ -63,7 +65,9 @@ This document is a specification only. Nothing in it authorizes implementation, 
 5. WHEN the spike triggers an approval request, THE spike report SHALL record how the request surfaces to the Runtime, and, WHILE no user is connected, THE spike report SHALL record the observed worker behavior (waits, denies, or fails) and the elapsed time before that behavior occurs.
 6. IF expired authentication, network failure, or a usage limit is reproduced or simulated during the spike, THEN THE spike report SHALL record for each condition how it appears to the Runtime (the observable signal or error indication) and whether the thread state is preserved. IF a condition cannot be reproduced or simulated, THEN THE spike report SHALL mark it "not verified" with the reason.
 7. IF the preferred integration cannot provide a required behavior listed in criteria 3 through 6, THEN THE spike report SHALL document the limitation and name another documented interface before any workaround is implemented.
-8. THE spike report SHALL record whether the chosen authentication route is subscription-based or API-billed, the account eligibility requirements, the usage limits (with units and period), and the billing implications (cost model and who is billed).
+8. THE spike report SHALL record whether the chosen authentication route is subscription-based or API-billed, the account eligibility requirements, the usage limits (with units and period, including whether they are shared with interactive use), the terms applicable to automated use, and the billing implications (cost model and who is billed).
+9. THE spike report SHALL record whether login with a ChatGPT subscription works unattended from a systemd user service, and how the Codex_Adapter detects that login has expired.
+10. THE spike report SHALL record the Python versions supported by the chosen Codex integration (SDK, app-server client, or CLI wrapper), including whether it supports Python 3.14.4 as installed on the Operator's machine, and SHALL mark the Python 3.14.4 support "not verified" with the reason if it cannot be established.
 
 ### Requirement 2: Codex execution adapter
 
@@ -88,7 +92,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 #### Acceptance Criteria
 
-1. WHEN the Setup_Script runs, THE Setup_Script SHALL install Agent_Instructions from a template that defines the assistant name Pixie and the Vault pointers.
+1. WHEN the Setup_Script runs, THE Setup_Script SHALL install Agent_Instructions from a template that defines the assistant name Pixie and the Vault pointers, and that template SHALL be original text written for this repository, so that no CC BY-SA text from the Vault templates is copied into any file of this repository.
 2. WHEN a new execution starts, THE Runtime SHALL provide the Agent_Instructions to Codex before Codex processes the first Task prompt of that execution.
 3. IF the Agent_Instructions cannot be read when a new execution starts, THEN THE Runtime SHALL NOT start the execution, SHALL mark the Task as failed, and SHALL notify the Operator with an error indicating that the Agent_Instructions are unavailable.
 4. WHEN a new Task is executed, THE Runtime SHALL make approved preferences from the configured Vault available to that execution before Codex processes the first Task prompt.
@@ -99,7 +103,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 9. WHEN a Task is created from a Conversation, THE Runtime SHALL start a Codex context that is separate from the contexts of all other Tasks and SHALL provide to it only the request text and the Conversation messages selected as relevant to that request.
 10. THE Agent_Instructions and the Vault templates installed by the Setup_Script SHALL contain no interactive-only rules, including rules that require stopping after asking a question, waiting for confirmation before editing, never suggesting to stop, or ending a reply with a forward question.
 11. THE Runtime SHALL handle every request for permission to act only through the Approval mechanism defined in Requirement 8, and THE Agent_Instructions SHALL NOT define any other approval path.
-12. WHEN the Setup_Script runs, THE Setup_Script SHALL create the Vault folder structure, index notes, templates, and frontmatter conventions deterministically and without any interview, and THE personalization interview SHALL remain optional and SHALL NOT be authoritative for any Vault content or Runtime configuration.
+12. WHEN the Setup_Script runs, THE Setup_Script SHALL create the Vault folder structure, index notes, templates, and frontmatter conventions deterministically and without any interview, and THE Setup_Script SHALL NOT include the personalization interview, which is deferred out of Phase 0 and, if added later, SHALL remain optional and SHALL NOT be authoritative for any Vault content or Runtime configuration.
 13. WHEN a new Task is executed, THE Runtime SHALL read approved preferences only from the designated preferences section of the Vault index.
 14. IF a Task attempts to modify a Protected_Section of the Vault without a granted Approval, THEN THE Runtime SHALL block the modification, create an Approval for the exact change under Requirement 8, and leave the Protected_Section unchanged.
 15. THE Runtime SHALL read the Vault path from exactly one authoritative configuration entry in the Runtime_Home configuration, and every other consumer of the Vault path (Setup_Script, Doctor_Script, Agent_Instructions, and Task_CLI) SHALL derive the path from that entry.
@@ -141,7 +145,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 #### Acceptance Criteria
 
-1. THE Scheduler SHALL support exactly three Schedule types: manual (runs only when the Operator triggers it), one-off (runs once at a single specified date and time), and recurring (runs repeatedly according to a single recurrence rule).
+1. THE Scheduler SHALL support exactly three Schedule types: manual (runs only when the Operator triggers it), one-off (runs once at a single specified date and time), and recurring (runs repeatedly according to a single standard 5-field cron expression evaluated in the Schedule's explicit IANA timezone).
 2. THE Scheduler SHALL compute each Occurrence's due time in the Schedule's explicit timezone, using IANA timezone identifiers, including correct handling of daylight-saving transitions.
 3. WHERE the Operator does not specify a timezone for a Schedule, THE Scheduler SHALL use the configured default timezone, which defaults to America/Montevideo.
 4. WHEN an Occurrence becomes due, THE Scheduler SHALL enqueue exactly one Task for that Occurrence within 5 seconds of its due time while the Runtime is running.
@@ -196,10 +200,11 @@ This document is a specification only. Nothing in it authorizes implementation, 
 4. IF the Runtime process exits with a non-zero status or is terminated by a signal other than an Operator-issued stop, THEN THE service SHALL restart the Runtime after a delay that starts at 2 seconds and doubles on each consecutive failure up to a maximum of 60 seconds.
 5. IF the Runtime exits because of a configuration error, THEN THE service SHALL write a log entry identifying the invalid or missing configuration item, and SHALL stop restarting after 5 consecutive failed starts within 300 seconds, leaving the service in a failed state visible in the status command output.
 6. THE documentation SHALL list the exact commands to start, stop, restart, show status, and follow logs for `pixie-runtime.service`, and SHALL state the expected observable result of each command.
-7. WHERE user lingering is enabled, THE Runtime SHALL start at boot without any user login and SHALL keep running after the Operator logs out of all sessions.
-8. IF user lingering is unavailable, THEN THE documentation SHALL state that the Runtime stops at logout and does not start until login, AND the verification result SHALL record the logout-persistence and boot-before-login criteria as not met.
+7. WHERE user lingering is enabled, THE Runtime SHALL start at boot without any user login and SHALL keep running after the Operator logs out of all sessions. THE Setup_Script SHALL ask the Operator before enabling user lingering, because it is a system change, and SHALL NOT enable it silently.
+8. IF user lingering is unavailable or the Operator declines to enable it, THEN THE documentation SHALL state the reduced lifecycle (the Runtime stops at logout and does not start until the Operator logs in), AND the verification result SHALL record the logout-persistence and boot-before-login criteria as not met, with the reason.
 9. THE documentation SHALL state that background availability requires the machine to be powered on and not suspended or hibernated.
 10. WHEN the Operator issues the stop command, THE service SHALL terminate the Runtime within 30 seconds, and the service SHALL NOT restart it.
+11. THE unit file of `pixie-runtime.service` SHALL specify an explicit absolute path to the Codex executable, and THE Runtime SHALL NOT resolve the Codex executable through nvm, the `PATH` set by shell startup files, or any other shell startup file.
 
 ### Requirement 10: Local runtime transport and client detachment
 
@@ -207,7 +212,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 #### Acceptance Criteria
 
-1. THE Runtime SHALL accept client connections only through a local transport that is accessible solely to the Operator's operating system user and is not reachable from any network interface.
+1. THE Runtime SHALL accept client connections only through a local transport (a Unix domain socket with owner-only permissions) that is accessible solely to the Operator's operating system user and is not reachable from any network interface.
 2. IF a connection attempt originates from a different operating system user or from a network interface, THEN THE Runtime SHALL reject the connection within 1 second and SHALL NOT process any request from it.
 3. THE Chat_Client and Task_CLI SHALL perform all task operations through the Runtime and SHALL NOT start unmanaged Codex executions.
 4. WHEN a client disconnects or closes, whether normally or abnormally, THE Runtime SHALL continue every accepted Task without changing its state and SHALL retain its recorded progress and results.
@@ -244,7 +249,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 2. WHEN the Store has committed the Task or Schedule record, THE Chat_Client SHALL display a confirmation of acceptance within 2 seconds of the commit.
 3. IF the Store fails to commit the Task or Schedule record, or the commit is not confirmed within 10 seconds, THEN THE Chat_Client SHALL display an error indicating the work was not registered, SHALL NOT display a confirmation of acceptance, and THE Runtime SHALL leave no partial record in the Store.
 4. WHEN a Task is accepted, THE Chat_Client SHALL display its Task identifier in the same message as the confirmation of acceptance.
-5. WHEN a Schedule is accepted, THE Chat_Client SHALL display the interpreted schedule (recurrence or next run time) and its IANA timezone name in the same message as the confirmation of acceptance.
+5. WHEN the Runtime interprets a recurring Schedule from a chat message, THE Chat_Client SHALL display the cron expression, the IANA timezone name, and the next three run times in that timezone, and THE Runtime SHALL create the Schedule only after the Operator confirms that preview, consistent with criterion 6. WHEN a one-off Schedule is interpreted, THE Chat_Client SHALL display the run time and the IANA timezone name. WHEN the Schedule is accepted, THE Chat_Client SHALL display that interpretation in the same message as the confirmation of acceptance.
 6. IF the scheduling intent is ambiguous (the message lacks a resolvable time, recurrence, or timezone, or admits more than one interpretation), THEN THE Chat_Client SHALL ask one clarifying question, THE Runtime SHALL NOT create a Schedule, and THE Store SHALL contain no new Schedule record for that message.
 7. WHEN the Runtime creates a delegated Task, THE Runtime SHALL store the identifier of the originating Conversation on the Task record, and every delegated Task SHALL have exactly one originating Conversation.
 8. IF a conversational reply states that a Task or Schedule was registered and the Store contains no corresponding committed record, THEN THE Runtime SHALL be considered non-conforming, and automated tests SHALL fail when this condition occurs.
@@ -337,10 +342,10 @@ This document is a specification only. Nothing in it authorizes implementation, 
 8. THE project SHALL preserve the separate license file of each component and the complete git history of the fork, with no history rewrite, squash, or force push of existing commits.
 9. THE project SHALL add a git remote named `upstream` pointing to `jaredrhod/fullstack-agent`, and SHALL record in a version-controlled file the Reviewed_Revision (git commit hash) of each reviewed repository, including `5bb159f` for this fork.
 10. THE project SHALL retain each original Claude-oriented file, in unmodified form, either in git history or in a directory named `legacy`, with a README in that directory stating the files are retained pending the Operator's removal decision, until the Operator decides to remove them.
-11. WHEN the Operator decides on the disposition of `always-on-agent-prototype-plan.md`, THE project SHALL commit or relocate the file in accordance with that decision.
-12. IF no Operator decision on `always-on-agent-prototype-plan.md` has been recorded, THEN THE project SHALL leave the file in its current location and SHALL NOT delete it.
+11. WHEN the Operator asks during implementation, THE project SHALL move `always-on-agent-prototype-plan.md` to `docs/` and commit it there, as decided by the Operator.
+12. IF the Operator has not yet asked for the move during implementation, THEN THE project SHALL leave `always-on-agent-prototype-plan.md` in its current location and SHALL NOT delete it.
 13. IF an adaptation step would delete, overwrite, or move an Operator file, THEN THE project SHALL abort that step, leave the file unchanged, and report to the Operator an error identifying the file and the step.
-14. THE project SHALL keep Vault_Template_Repo templates and any adapted Vault text licensed under CC BY-SA 4.0 with attribution to Jared Rhodenizer and share-alike preserved, SHALL keep them in their own license file separate from the AGPL-3.0-or-later license of the Runtime, and SHALL document the mixed licensing (AGPL Runtime, CC BY-SA templates) in the repository documentation.
+14. THE project SHALL keep Vault_Template_Repo templates and any adapted Vault text licensed under CC BY-SA 4.0 with attribution to Jared Rhodenizer and share-alike preserved, SHALL keep them in their own license file separate from the AGPL-3.0-or-later license of the Runtime, and SHALL document the mixed licensing (AGPL Runtime, CC BY-SA templates) in the repository documentation. Vault-derived templates SHALL remain only in the Vault_Template_Repo under CC BY-SA 4.0, and the Pixie identity template in this repository SHALL be original text that borrows ideas but not sentences from them. THE documentation SHALL state that this is not legal advice and that a qualified review is advised before publishing or selling.
 15. THE project SHALL replace, in the Phase 0 flow, the following Claude-specific Vault parts: the `templates/MEMORY.md` redirect, the `~/.claude/projects` memory migration, the Claude-as-executor framing of the wizard, and the shipped Jarvis identity (name, tone, and welcome line).
 16. THE project SHALL provide a Pixie identity block with a neutral default name, tone, and welcome line in place of the Jarvis identity.
 17. THE project SHALL record in a version-controlled file the Reviewed_Revisions `5bb159f` (fullstack-agent fork) and `659bba9` (Vault_Template_Repo fork).
@@ -356,9 +361,11 @@ This document is a specification only. Nothing in it authorizes implementation, 
 2. THE project SHALL include real Codex smoke tests for behavior that mocks cannot establish, each with a maximum runtime of 120 seconds, and each reporting a timeout as a failure instead of hanging.
 3. THE project SHALL include a manual verification procedure covering systemd service start, stop, and restart, user logout, and host reboot, where each step states the action to perform, the expected observable outcome, and a pass/fail recording field.
 4. THE project SHALL provide an operations runbook (`docs/operations.md`) that describes the end-to-end scenario as an ordered list of steps, each with the command to run and the expected observable result.
-5. WHEN the end-to-end scenario runs, THE verification result SHALL show, as separate pass/fail items, that a task scheduled through `pixie chat` executes after the client closes, delivers its Result or retains it when delivery is not possible, survives a service restart without losing the task or its Result, and appears in both chat history and Task_CLI history.
+5. WHEN the end-to-end scenario runs, THE scenario SHALL use as its workflow a summary of the state of a development project, reading the project directory read-only and writing the summary as a result file, WHERE the Operator chooses which project through configuration, AND THE verification result SHALL show, as separate pass/fail items, that a task scheduled through `pixie chat` executes after the client closes, delivers its Result or retains it when delivery is not possible, survives a service restart without losing the task or its Result, and appears in both chat history and Task_CLI history.
 6. IF a criterion cannot be verified or a known limitation exists, THEN THE verification result SHALL record that criterion as "unverified" or list it under known limitations, with the reason, and SHALL NOT count it as passed.
 7. IF an automated test, smoke test, or end-to-end scenario step fails, THEN THE verification result SHALL record the overall outcome as failed, identify the failing item, and retain the results of the items that did run.
+8. THE automated tests SHALL use the fake Codex_Adapter and SHALL NOT require network access or an installed Codex.
+9. IF an environment criterion is not met where verification ran, THEN THE verification result SHALL record that criterion as "unverified" with the reason, and SHALL NOT count it as passed.
 
 ### Requirement 20: Phase 1 forward compatibility
 
@@ -380,25 +387,25 @@ The following items are assumptions or open decisions. Each must be resolved or 
 
 | ID | Item | Current position | Resolve by |
 | --- | --- | --- | --- |
-| D1 | Component fork URLs and ownership (ai-memory-vault, Backtalk, ai-visualizer, Barehands) | PARTIALLY RESOLVED. Vault fork exists at `aabero/pixie-ai-memory-vault` (HEAD 659bba9, `upstream` set to `jaredrhod/ai-memory-vault`, nothing fetched). Backtalk, ai-visualizer, and Barehands forks are still unsupplied and not needed for Phase 0. | Before changing setup or update remotes for the remaining components |
-| D2 | Codex interface: Python SDK, app-server, or non-interactive CLI, and pinned versions | Python SDK proposed, unverified | Requirement 1 spike (P0-01) |
-| D3 | Authentication route and billing (subscription or API-billed) | Unverified | P0-01 |
-| D4 | Runtime language and storage | Python and SQLite proposed | Phase 0 design |
-| D5 | Logout and boot lifecycle (user lingering) | systemd user service proposed; lingering unverified | P0-06 |
-| D6 | First bounded real workflow for end-to-end verification | Not selected | Before end-to-end verification |
+| D1 | Component fork URLs and ownership (ai-memory-vault, Backtalk, ai-visualizer, Barehands) | PARTIALLY RESOLVED. Vault fork exists at `aabero/pixie-ai-memory-vault` (HEAD 659bba9, `upstream` set to `jaredrhod/ai-memory-vault`, nothing fetched). Backtalk, ai-visualizer, and Barehands will be forked in Phase 1 from the reviewed revision (Backtalk 84b3a6c per the plan); they are not needed in Phase 0. | Phase 1 |
+| D2 | Codex interface: Python SDK, app-server, or non-interactive CLI, and pinned versions | OPEN, resolved by the Requirement 1 spike. Python SDK proposed (first candidate; `openai-codex`, controls the local Codex app-server over JSON-RPC with a pinned runtime, requires Python 3.10+), fallbacks app-server directly, then `codex exec`. The spike records the supported Python versions (Requirement 1.10). Open questions for the spike: unattended login with a ChatGPT subscription from a systemd service; how approval requests surface to application code; cancellation/interruption and error signals; usage limits shared with interactive use. | Requirement 1 spike (P0-01) |
+| D3 | Authentication route and billing (subscription or API-billed) | OPEN. The Operator has a ChatGPT subscription (no API key). Whether it supports unattended use, its limits, and its terms for automated use are verified by the spike (Requirements 1.8, 1.9). | Requirement 1 spike (P0-01) |
+| D4 | Runtime language and storage | RESOLVED: Python and SQLite. | Resolved |
+| D5 | Logout and boot lifecycle | OPEN. Aim for user lingering so the Runtime starts at boot and survives logout; setup asks before enabling it (Requirements 9.7, 9.8). Actual behavior is verified and recorded as met, not met, or unverified. | Manual verification |
+| D6 | First bounded real workflow for end-to-end verification | RESOLVED: a summary of the state of a development project, read-only on the project directory, with the result written as a result file. The Operator chooses which project through configuration (Requirement 19.5). | Resolved |
 | D7 | Vault location and whether ai-memory-vault is adapted in place or vendored | RESOLVED for adaptation: adapted in place as a template repository (Vault_Template_Repo). The Vault location itself is set in Runtime_Home configuration (Requirement 3.15). | Resolved |
-| D8 | Platform scope: Phase 0 targets Ubuntu with systemd, while existing scripts also support macOS and Windows | Assumed Linux-only for Phase 0. The macOS and Windows scripts remain untouched or marked legacy. Operator confirmation needed. | Before design |
-| D9 | Rename of the repository, directories, and references from `fullstack-agent` to Pixie | Not decided. The plan uses `fullstack-agent/` as the layout root. | Before the layout is created |
-| D10 | Disposition of the untracked `always-on-agent-prototype-plan.md` | Untracked on branch `kiro-phase0`. Commit, move to `docs/`, or keep local. | Before the first commit |
-| D11 | Local runtime transport (Unix domain socket or other user-restricted channel) | Not decided | Phase 0 design |
-| D12 | Handling of pre-existing Claude-era artifacts on the Operator's machine (a `CLAUDE.md` in a parent folder, existing vault) | Assumed untouched; never edited by Setup_Script | Before P0-08 |
-| D13 | Default values: timeouts, retry limit, heartbeat interval, backoff, missed-run default policy | Not specified in the plan | Phase 0 design |
-| D14 | Recurring schedule format (cron-like, interval, or other) | Not specified | Phase 0 design |
-| D15 | Desktop notification mechanism on Ubuntu | Not specified. Optional, must not block execution. | P0-07 design |
-| D16 | Permission_Profile model and preauthorization format | Only bounded local reads and result writes are defined | Phase 0 design |
+| D8 | Platform scope: Phase 0 targets Ubuntu with systemd, while existing scripts also support macOS and Windows | RESOLVED: Phase 0 is Linux-only (Ubuntu, systemd). The macOS and Windows scripts remain untouched or marked legacy. Listed as out of scope and reflected in the Introduction and Requirement 18. | Resolved |
+| D9 | Rename of the repository, directories, and references from `fullstack-agent` to Pixie | RESOLVED: keep repository and directory names. Only user-facing names change now (`pixie` command, `pixie-runtime.service`, assistant name Pixie). A full rename may be revisited later. | Resolved |
+| D10 | Disposition of the untracked `always-on-agent-prototype-plan.md` | RESOLVED: move it to `docs/` and commit it. The move and commit happen only when the Operator asks during implementation (Requirement 18.11, 18.12). | Resolved |
+| D11 | Local runtime transport (Unix domain socket or other user-restricted channel) | RESOLVED: Unix domain socket with owner-only permissions (Requirement 10.1). | Resolved |
+| D12 | Handling of pre-existing Claude-era artifacts on the Operator's machine (a `CLAUDE.md` in a parent folder, existing vault) | RESOLVED: setup never edits a parent `CLAUDE.md` or an existing vault (Requirement 18.7). | Resolved |
+| D13 | Default values: timeouts, retry limit, heartbeat interval, backoff, missed-run default policy | RESOLVED: use the defaults in the detailed criteria: 60 s lease, 15 s heartbeat, 300 s timeout, 3 retries, 2-60 s backoff (Requirements 7 and 9). Default missed-run policy: skip. | Resolved |
+| D14 | Recurring schedule format (cron-like, interval, or other) | RESOLVED: recurring schedules use standard 5-field cron plus an explicit IANA timezone (default America/Montevideo); the evaluation library is a design choice. One-off remains its own Schedule type. Cron limits: it cannot express a one-off run or an even every-N-hours cadence beyond the day. See Requirements 6.1 and 12.5. | Resolved |
+| D15 | Desktop notification mechanism on Ubuntu | RESOLVED: libnotify `notify-send` is the optional mechanism and must not block execution (Requirements 14.3, 14.4). | Resolved |
+| D16 | Permission_Profile model and preauthorization format | RESOLVED: named Permission_Profiles, the first two being `read-only` and `workspace-write`. Preauthorizations are stored as explicit entries naming the exact operation (Requirement 8). | Resolved |
 | D17 | Role of Obsidian | RESOLVED: optional in Phase 0, never installed, registered, or configured by setup (Requirement 16.9, 16.10). | Resolved |
-| D18 | License compatibility between the AGPL-3.0-or-later Runtime and CC BY-SA 4.0 templates | Assumed compatible when packaged as separate works with separate license files and documented mixed licensing (Requirement 18.14). Packaging and documentation approach needs Operator confirmation. | Before the first release of templates |
-| D19 | Whether the optional personalization interview wizard is kept for Codex in Phase 0 or deferred | Not decided. If kept, it is optional and non-authoritative (Requirement 3.12). | Before P0-03 |
+| D18 | License compatibility between the AGPL-3.0-or-later Runtime and CC BY-SA 4.0 templates | RESOLVED (Option A): Pixie's `AGENTS.md` identity template is written from scratch in this AGPL repository as original text, borrowing ideas but not sentences from the CC BY-SA vault templates. Vault-derived templates stay only in the vault fork under CC BY-SA 4.0 (Requirements 3.1, 18.14). This is not legal advice; a qualified review is advised before publishing or selling. | Resolved |
+| D19 | Whether the optional personalization interview wizard is kept for Codex in Phase 0 or deferred | RESOLVED: deferred out of Phase 0 (Requirement 3.12, Out of Scope). | Resolved |
 
 ## Test Scope
 
@@ -406,7 +413,7 @@ Test scope SHALL be proposed again in each implementation plan before behavior c
 
 ### Automated checks (no real Codex)
 
-The Codex_Adapter is replaced by a fake that emits scripted events.
+The Codex_Adapter is replaced by a fake that emits scripted events. These checks need no network access or Codex installation (Requirement 19.8).
 
 - State transitions: the lifecycle permits only valid transitions and terminal states reject further changes (Requirement 5).
 - Scheduling: timezone handling for America/Montevideo, one-off and recurring due-time computation, missed-run skip and catch-up policies, and no duplicate enqueue of the same Occurrence (Requirement 6).
@@ -438,16 +445,16 @@ The Codex_Adapter is replaced by a fake that emits scripted events.
 - An authentication or usage-limit failure produces the expected blocked or failed state, where it can be induced safely.
 - A new Task retrieves an approved preference from the configured Vault.
 
-Smoke tests are few, bounded in cost, and excluded from default test runs.
+Smoke tests are few, bounded in cost, and excluded from default test runs. 
 
 ### Manual and systemd verification
 
 - Service start, failure restart with backoff, shutdown, and log inspection.
-- Behavior after logout and after reboot, with and without lingering (Requirement 9).
+- Behavior after logout and reboot, with and without user lingering (Requirement 9.7, 9.8).
 - Desktop notification delivery with and without a graphical session.
-- The end-to-end runbook scenario (Requirement 19).
+- The end-to-end runbook scenario (Requirement 19), using the project-state summary workflow (read-only project directory, result file output, project configurable by the Operator).
 
-Verification that cannot be performed SHALL be recorded as unverified and not reported as passed.
+Verification that cannot be performed SHALL be recorded as unverified and not reported as passed, including environment criteria unmet on the machine where verification ran (Requirement 19.9).
 
 ## Out of Scope
 
@@ -460,5 +467,8 @@ The following items are excluded from Phase 0:
 - Email, calendar, and other broad external integrations. Phase 0 validates one bounded local workflow only.
 - Deployment or installation on the Operator's computer, and any change that requires it.
 - Edits to the Operator's existing personal notes or existing Vault content.
-- macOS and Windows support for the new Runtime (subject to confirmation of decision D8).
+- macOS and Windows support for the new Runtime (decision D8: Phase 0 is Linux-only; existing macOS/Windows scripts stay untouched or are marked legacy).
+- The optional personalization interview wizard (decision D19).
+- A full rename of the repository and directories (decision D9); only user-facing names change.
+- Forking Backtalk, ai-visualizer, and Barehands (Phase 1, from the reviewed revisions).
 - Concurrent task execution beyond one Worker slot, and multi-user operation.
