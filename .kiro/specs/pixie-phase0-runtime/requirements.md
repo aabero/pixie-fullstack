@@ -4,12 +4,14 @@
 
 Phase 0 of Pixie turns this fork of `jaredrhod/fullstack-agent` into a persistent, Codex-powered personal assistant. Pixie accepts work through an interactive text chat and task commands, executes that work in a background runtime that outlives any client, retains tasks, schedules, conversation references, and results, and runs under Ubuntu systemd user-service management.
 
-The source of these requirements is `always-on-agent-prototype-plan.md` (sections 1-4, 6, and 7), covering work packages P0-01 to P0-10 and the section 4.12 acceptance criteria. Phase 1 (bilingual voice) is out of scope and appears only as a forward-compatibility constraint.
+Pixie is an always-on personal assistant built within this fork. Phase 0 must demonstrate the complete loop: converse, persist delegated work, execute after the client closes, save results, and return and discuss them. Voice follows in Phase 1 through the same Runtime.
+
+The source of these requirements is `docs/always-on-agent-prototype-plan.md` (sections 1-4, 6, and 7), covering work packages P0-01 to P0-10 and the section 4.12 acceptance criteria. Phase 1 (bilingual voice) is out of scope and appears only as a forward-compatibility constraint.
 
 Repository findings that shape the requirements:
 
 - The fork (origin `git@github.com:aabero/pixie-fullstack.git`) currently contains no application code. It holds a Claude Code installer boot file (`CLAUDE.md`), a conversational setup wizard (`fullstack-agent.md`), terminal launchers (`start.sh`, `start.bat`), update scripts (`update.sh`, `update.bat`), and documentation. The Python runtime, Codex adapter, SQLite store, scheduler, worker, CLI, chat client, systemd unit, setup/doctor scripts, and tests are net-new.
-- No `upstream` remote is configured, the working branch is `kiro-phase0`, and `always-on-agent-prototype-plan.md` is untracked.
+- No `upstream` remote is configured on this fork, the working branch is `kiro-phase0`, and the plan file now lives at `docs/always-on-agent-prototype-plan.md` (moved from the repository root; originally committed at the root in ac88532).
 - The code is licensed AGPL-3.0-or-later, copyright Jared Rhodenizer. The license and attribution must be preserved.
 
 Platform scope: Phase 0 is Linux-only (Ubuntu with systemd user services), and the backend is Codex authenticated with the Operator's ChatGPT subscription (no API key). The existing macOS and Windows scripts stay untouched or are marked legacy. User-facing names change now (`pixie` command, `pixie-runtime.service`, assistant name Pixie); repository and directory names are kept. The Operator's machine is an Ubuntu laptop (native Ubuntu 26.04, Python 3.14.4, the `codex` CLI installed through nvm under Node 26, user lingering currently off). If the spike (Requirement 1) shows that the subscription route cannot support unattended execution, the scope is reviewed with the Operator before dependent work continues.
@@ -25,7 +27,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 - **Codex_Adapter**: The application-owned execution interface that wraps the selected Codex integration (SDK, app-server, or non-interactive CLI) and maps its events to Application_Events.
 - **Application_Event**: A Runtime-defined, timestamped event record (progress, state change, approval request, cancellation request, result).
 - **Store**: The SQLite database holding Conversations, Tasks, Schedules, Attempts, Events, Results, Deliveries, and Approvals.
-- **Task**: A persisted unit of work with a request, workspace, permission profile, and State.
+- **Task**: A persisted unit of work with a request, Project_Directory, Results_Location, Permission_Profile, and State.
 - **State**: The lifecycle state of a Task: `queued`, `running`, `awaiting_approval`, `blocked`, `succeeded`, `failed`, or `cancelled`.
 - **Attempt**: One execution try of a Task, with start and end times, backend references, a lease, a heartbeat, an outcome, and an error category.
 - **Schedule**: A persisted trigger definition (manual, one-off, or recurring) with a timezone, next due time, enabled flag, and missed-run policy.
@@ -34,13 +36,17 @@ This document is a specification only. Nothing in it authorizes implementation, 
 - **Chat_Client**: The `pixie chat` terminal client that connects to the Runtime.
 - **Task_CLI**: The non-conversational `pixie` subcommands for inspecting and controlling the Runtime.
 - **Approval**: A persisted request for user permission to perform an exact operation, together with its decision.
-- **Permission_Profile**: The working directory and set of allowed actions attached to a Task.
+- **Project_Directory**: The configured absolute directory that a Task may read, within the bounds of Requirement 8.
+- **Results_Location**: A designated per-Task results directory, managed by the Runtime under the Runtime_Home, where results are written by default.
+- **Permission_Profile**: A named set of allowed actions attached to a Task (`read-only` or `workspace-write`), applied relative to the Task's Project_Directory and Results_Location.
 - **Result**: The persisted summary, artifact paths, completion status, and output references of a finished Task.
 - **Delivery**: A persisted record of an attempt to notify the user of a Result, with channel, status, and last error.
 - **Vault**: The Markdown knowledge directory (adapted from ai-memory-vault) holding profile, preferences, daily notes, and job instructions.
 - **Vault_Template_Repo**: The adapted fork of `jaredrhod/ai-memory-vault` (`aabero/pixie-ai-memory-vault`), a prompts-and-templates repository without code, adapted in place and licensed CC BY-SA 4.0. It supplies the Vault templates (index, daily note, memory). The optional personalization interview is deferred out of Phase 0.
 - **Protected_Section**: A Vault section (profile bio, preferences, vault rules) that a Task may modify only with a granted Approval.
-- **Agent_Instructions**: The `AGENTS.md`-based boot instructions defining Pixie's identity and Vault pointers.
+- **Agent_Instructions**: The `AGENTS.md`-based boot instructions defining Pixie's identity and Vault pointers, installed from the separate template `templates/agent/AGENTS.md` to the configured Agent_Instructions location. They are distinct from the repository development rules in the root `AGENTS.md`.
+- **Operator_Content**: Operator-authored configuration values, credentials, Vault notes, and existing Store records.
+- **Setup_Managed_File**: A file owned by the Setup_Script, such as the systemd unit file and the version manifest.
 - **Runtime_Home**: The directory outside the repository checkout where the Runtime keeps configuration, state, logs, and the Store.
 - **Setup_Script**: The deterministic script that installs and configures Phase 0.
 - **Doctor_Script**: The script that checks the installation and reports problems.
@@ -68,6 +74,9 @@ This document is a specification only. Nothing in it authorizes implementation, 
 8. THE spike report SHALL record whether the chosen authentication route is subscription-based or API-billed, the account eligibility requirements, the usage limits (with units and period, including whether they are shared with interactive use), the terms applicable to automated use, and the billing implications (cost model and who is billed).
 9. THE spike report SHALL record whether login with a ChatGPT subscription works unattended from a systemd user service, and how the Codex_Adapter detects that login has expired.
 10. THE spike report SHALL record the Python versions supported by the chosen Codex integration (SDK, app-server client, or CLI wrapper), including whether it supports Python 3.14.4 as installed on the Operator's machine, and SHALL mark the Python 3.14.4 support "not verified" with the reason if it cannot be established.
+11. THE spike report SHALL verify whether the chosen integration can enforce the `read-only` and `workspace-write` Permission_Profiles of Requirement 8 through the backend's sandbox or permission configuration (for example sandbox mode and writable roots), SHALL record how each profile is enforced, and SHALL record any profile that cannot be enforced.
+12. THE spike report SHALL record how the chosen Codex integration discovers instruction files, so that the Runtime can ensure that Task executions do not inherit the repository development rules (Requirement 3.16).
+13. THE spike report SHALL record how the Codex model and reasoning effort are set through the chosen integration and which values the account accepts, and SHALL mark them "not verified" with the reason if they cannot be established.
 
 ### Requirement 2: Codex execution adapter
 
@@ -85,6 +94,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 8. THE Codex_Adapter SHALL authenticate through the supported Codex authentication mechanism without reading tokens from Codex credential stores and without writing credential values to any repository file.
 9. IF Codex authentication is missing, expired, or rejected, THEN THE Codex_Adapter SHALL fail the submission within 30 seconds, report an authentication failure to the Runtime without including credential values, and leave the Task in its pre-submission state.
 10. WHEN a stored Codex thread is restored, THE Runtime SHALL treat the thread contents as context only and SHALL NOT mark any external action as completed unless a recorded Application_Event or verification result for that action exists independently of the thread.
+11. THE Codex model and reasoning effort SHALL be Runtime_Home configuration values, and THE Runtime source SHALL NOT hardcode any model identifier or effort level. WHERE the model or reasoning effort is unset, THE Runtime SHALL use the Codex integration's own default. IF a configured model or reasoning effort value is unknown or unsupported, THEN THE Runtime SHALL reject it with an error naming the configuration key and SHALL NOT lose any accepted Task. THE Runtime SHALL record the model and reasoning effort used on each Attempt, THE Doctor_Script SHALL report the configured values, and THE example configuration shipped in the repository SHALL carry these keys commented or empty with no hardcoded default model.
 
 ### Requirement 3: Identity and memory instructions
 
@@ -92,7 +102,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 #### Acceptance Criteria
 
-1. WHEN the Setup_Script runs, THE Setup_Script SHALL install Agent_Instructions from a template that defines the assistant name Pixie and the Vault pointers, and that template SHALL be original text written for this repository, so that no CC BY-SA text from the Vault templates is copied into any file of this repository.
+1. WHEN the Setup_Script runs, THE Setup_Script SHALL install Agent_Instructions from the separate template `templates/agent/AGENTS.md` (not from the root `AGENTS.md`, Requirement 18.1) to the configured Agent_Instructions location, and that template defines the assistant name Pixie and the Vault pointers, and that template SHALL be original text written for this repository, so that no CC BY-SA text from the Vault templates is copied into any file of this repository.
 2. WHEN a new execution starts, THE Runtime SHALL provide the Agent_Instructions to Codex before Codex processes the first Task prompt of that execution.
 3. IF the Agent_Instructions cannot be read when a new execution starts, THEN THE Runtime SHALL NOT start the execution, SHALL mark the Task as failed, and SHALL notify the Operator with an error indicating that the Agent_Instructions are unavailable.
 4. WHEN a new Task is executed, THE Runtime SHALL make approved preferences from the configured Vault available to that execution before Codex processes the first Task prompt.
@@ -107,6 +117,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 13. WHEN a new Task is executed, THE Runtime SHALL read approved preferences only from the designated preferences section of the Vault index.
 14. IF a Task attempts to modify a Protected_Section of the Vault without a granted Approval, THEN THE Runtime SHALL block the modification, create an Approval for the exact change under Requirement 8, and leave the Protected_Section unchanged.
 15. THE Runtime SHALL read the Vault path from exactly one authoritative configuration entry in the Runtime_Home configuration, and every other consumer of the Vault path (Setup_Script, Doctor_Script, Agent_Instructions, and Task_CLI) SHALL derive the path from that entry.
+16. THE Runtime SHALL NOT let Task executions inherit the repository development rules from the root `AGENTS.md`, and THE Runtime SHALL provide Pixie's Agent_Instructions explicitly to each execution, using the instruction discovery behavior recorded by the spike (Requirement 1.12).
 
 ### Requirement 4: Durable task store
 
@@ -115,8 +126,8 @@ This document is a specification only. Nothing in it authorizes implementation, 
 #### Acceptance Criteria
 
 1. THE Store SHALL persist Conversations, Tasks, Schedules, Attempts, Events, Results, Deliveries, and Approvals in SQLite.
-2. WHEN the Runtime starts, THE Store SHALL apply all pending versioned schema migrations in ascending version order, each within a single transaction, and record the applied schema version after each migration succeeds.
-3. IF a schema migration fails, THEN THE Runtime SHALL roll back that migration, leave the recorded schema version unchanged, refuse to start, and report an error identifying the failed migration version.
+2. WHEN the Runtime starts and no Store exists, THE Runtime SHALL initialize the Store at the current schema version automatically. IF the Runtime starts and the Store has a pending schema migration, THEN THE Runtime SHALL NOT apply the migration, SHALL refuse to start, and SHALL tell the Operator which migrate step to run. WHEN the Operator invokes the migrate step on an existing Store, THE migrate step SHALL show the pending migrations, take a verified SQLite backup under the Runtime_Home, and apply each migration in ascending version order within its own transaction, recording the applied schema version after each migration succeeds.
+3. IF a schema migration fails, THEN THE migrate step SHALL roll back that migration, leave the recorded schema version unchanged, leave the backup in place, and report an error identifying the failed migration version and the backup location.
 4. WHEN a State transition is requested and permitted by the lifecycle, THE Store SHALL commit the State change and the corresponding Event in a single transaction, so that either both are persisted or neither is.
 5. WHEN the Runtime restarts, whether after a normal shutdown, client closure, or abnormal termination, THE Store SHALL retain all records committed before the restart, with no partial State transitions visible.
 6. IF a requested State transition is not permitted by the lifecycle, THEN THE Store SHALL reject the transition, return an error indicating the current State and the requested State, leave the Task unchanged, and record no Event for the transition.
@@ -138,6 +149,9 @@ This document is a specification only. Nothing in it authorizes implementation, 
 7. IF Codex authentication has expired, THEN THE Runtime SHALL set the affected Task to `blocked` with an error category of `authentication` and a message telling the Operator that re-authentication is required.
 8. IF a usage limit prevents execution, THEN THE Runtime SHALL set the affected Task to `blocked` with an error category of `usage_limit` and a message telling the Operator which limit was reached and, when known, when it resets.
 9. IF a network failure prevents execution and the failure persists after 3 retry attempts, THEN THE Runtime SHALL set the affected Task to `failed` with an error category of `network` and a message telling the Operator the action to take, and THE Store SHALL retain the Task's recorded progress.
+10. WHEN cancellation is requested for a Task with no active Attempt (State `queued` or `blocked`), THE Runtime SHALL set the Task to `cancelled` immediately and SHALL record any possible-external-action note from earlier Attempts.
+11. WHEN cancellation is requested for a Task with an active Attempt (State `running` or `awaiting_approval`), THE Runtime SHALL keep the Task State unchanged while the request is pending, SHALL ask the Codex_Adapter to cancel the Attempt, SHALL mark any pending Approval of that Task as withdrawn, and SHALL change the State only under criterion 5 when the backend outcome is known (`cancelled`, or `succeeded` or `failed` if the Task finished first). THE Chat_Client and Task_CLI SHALL show a pending cancellation request while it is pending.
+12. IF the Runtime restarts while a cancellation request is pending, THEN THE Runtime SHALL honor the request during reconciliation (Requirement 7), SHALL NOT re-queue the Task, SHALL confirm that the previous backend execution is no longer active, and SHALL then set the Task to `cancelled`, recording whether an external action may have occurred.
 
 ### Requirement 6: Scheduling
 
@@ -164,13 +178,16 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 1. THE Worker SHALL execute at most one Attempt at a time.
 2. WHEN the Worker claims an Attempt, THE Worker SHALL record a lease with an expiry of 60 seconds from the claim time and SHALL refresh the heartbeat every 15 seconds, extending the lease expiry to 60 seconds from each refresh, until the Attempt reaches a terminal outcome.
-3. IF an Attempt runs longer than its configured timeout (default 300 seconds, allowed range 1 to 3600 seconds), THEN THE Worker SHALL request cancellation of the Attempt, record the Attempt outcome as `timed_out`, and preserve all data recorded by the Attempt up to that point.
-4. WHEN the Runtime starts, THE Runtime SHALL identify every Attempt in a running state whose lease expiry is earlier than the current time, mark each as stale, and reconcile each one according to criteria 5, 6, and 7 before the Worker claims any new Attempt.
-5. WHEN a stale Attempt is repeatable and has no recorded external action, THE Runtime SHALL re-queue its Task as a new Attempt, provided the number of retries already performed is below the configured maximum retries (default 3, allowed range 0 to 10).
+3. IF an Attempt's active execution time exceeds its configured timeout (default 300 seconds, allowed range 1 to 3600 seconds), THEN THE Worker SHALL request cancellation of the Attempt, record the Attempt outcome as `timed_out`, and preserve all data recorded by the Attempt up to that point. WHILE the Task is `awaiting_approval`, THE Worker SHALL pause the timeout measurement, and WHEN the Approval is granted, THE Worker SHALL resume it with the remaining budget preserved. THE Worker SHALL continue lease heartbeats while the Task is `awaiting_approval`.
+4. WHEN the Runtime starts, THE Runtime SHALL, before claiming any Attempt, identify every Attempt in a running or awaiting-approval state that belongs to a different Runtime instance than the current one, regardless of whether its lease has expired, mark each as stale, and reconcile each one according to criteria 5, 6, 7, 11, and 12. WHILE a Runtime instance is running, lease expiry SHALL detect a hung Attempt of that instance, which is reconciled in the same way.
+5. WHEN a stale Attempt is repeatable and has no recorded external action, THE Runtime SHALL, after confirming or forcing that the previous backend execution is no longer active, re-queue its Task as a new Attempt, provided the number of retries already performed is below the configured maximum retries (default 3, allowed range 0 to 10).
 6. IF a stale Attempt may have performed an external action (an external action is recorded, or the Attempt is not repeatable), THEN THE Runtime SHALL set the Task to `blocked`, record the reason as possible external action, not re-queue the Task, and prevent any retry until the Operator has explicitly approved it.
 7. IF the number of retries performed for a Task equals the configured maximum retries when reconciliation or failure handling would otherwise re-queue it, THEN THE Runtime SHALL set the Task to `failed`, record the error category of the last failed Attempt, and not create a further Attempt.
-8. WHEN the Runtime receives a shutdown signal, THE Worker SHALL stop claiming new Attempts immediately, and SHALL record any in-flight Attempt as interrupted for reconciliation within 10 seconds of receiving the signal, leaving its lease unrefreshed so that it is reconciled under criteria 4 to 7 on the next start.
+8. WHEN the Runtime receives a shutdown signal, THE Worker SHALL stop claiming new Attempts immediately, and SHALL record any in-flight Attempt as interrupted for reconciliation within 10 seconds of receiving the signal, so that the next start reconciles it under criteria 4 to 7 by instance identifier without waiting for lease expiry.
 9. IF recording the lease, a heartbeat refresh, or a reconciliation outcome fails, THEN THE Worker SHALL stop executing the current Attempt, SHALL NOT claim a new Attempt, and SHALL report an error indicating the persistence failure to the Operator.
+10. THE Runtime SHALL generate a unique instance identifier at each process start and record it on every Attempt it claims, and THE Runtime SHALL hold a single-instance lock in the Runtime_Home so that a second Runtime process refuses to start while the lock is held.
+11. IF the Runtime cannot confirm that the previous backend execution of a stale Attempt is no longer active, THEN THE Runtime SHALL set the Task to `blocked` for Operator review and SHALL NOT re-queue it. THE Runtime SHALL NOT allow two active Attempts for one Task or two concurrent Attempts overall.
+12. WHEN a stale Attempt belongs to a Task in `awaiting_approval`, THE Runtime SHALL close the interrupted Attempt as `interrupted`, SHALL keep the Task's pending Approval and State, and SHALL NOT re-run the Task before the Approval is answered. WHEN the Approval is granted, THE Runtime SHALL give the new Attempt the grant bound to the exact operation; WHEN it is denied, Requirement 8.8 applies. IF an external action may have been recorded, THEN criterion 6 still applies and the Task is set to `blocked`.
 
 ### Requirement 8: Permissions and approvals
 
@@ -178,15 +195,21 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 #### Acceptance Criteria
 
-1. WHEN a Task is created, THE Runtime SHALL attach to the Task one working directory expressed as an absolute path and exactly one Permission_Profile, and SHALL reject creation of a Task that lacks either value with an error indicating which value is missing, leaving no Task persisted.
-2. THE Runtime SHALL permit, by default, reads and writes only to result files located within the Task's working directory, with a maximum size of 10 MB per file and a maximum of 100 files per Task.
-3. IF a Task attempts a read or write outside its working directory or beyond the limits in criterion 2 and the operation is not covered by its Permission_Profile or a recorded preauthorization, THEN THE Runtime SHALL block the operation, create an Approval for the exact operation, and set the Task to `awaiting_approval`.
+1. WHEN a Task is created, THE Runtime SHALL attach to the Task one Project_Directory expressed as an absolute path and exactly one Permission_Profile, SHALL assign the Task's Results_Location, and SHALL reject creation of a Task that lacks a Project_Directory or a Permission_Profile with an error indicating which value is missing, leaving no Task persisted.
+2. THE Runtime SHALL permit, by default, reads only within the configured Project_Directory (and within the Vault for approved preferences, Requirement 3) and writes only within the Task's Results_Location, with a maximum size of 10 MB per file and a maximum of 100 files per Task, and THE Runtime SHALL canonicalize paths so that symbolic links and `..` segments cannot escape these bounds.
+3. IF a Task attempts a read or write outside the bounds of criterion 2 or beyond its limits and the operation is not covered by its Permission_Profile or a recorded preauthorization, THEN THE Runtime SHALL block the operation, create an Approval for the exact operation, and set the Task to `awaiting_approval`.
 4. WHEN a Task requires an external change not covered by its Permission_Profile or a recorded preauthorization, THE Runtime SHALL, within 2 seconds, create exactly one Approval that identifies the exact operation (operation type, target, and parameters), set the Task to `awaiting_approval`, and not perform the operation until the Approval is granted.
 5. WHEN the Operator answers an Approval with grant or deny, THE Runtime SHALL record the decision, the answering client type, and the timestamp against that exact Approval, apply the decision only to the operation named in that Approval, and, if granted, resume the Task within 5 seconds.
 6. IF an Approval has already been answered and a further answer is submitted for it, THEN THE Runtime SHALL reject the further answer with an error indicating the Approval is already resolved and SHALL keep the original decision unchanged.
 7. WHILE no Chat_Client or Task_CLI is connected to answer an Approval, THE Runtime SHALL keep the Task in `awaiting_approval`, SHALL keep the Approval pending with no time-based expiry, and SHALL NOT grant the Approval.
 8. IF an Approval is denied, THEN THE Runtime SHALL NOT perform the operation, SHALL record the denial as a Task Event that references the Approval, and SHALL set the Task to a non-running state (`failed` or `blocked`) within 5 seconds, unless the Task has other work not dependent on the denied operation.
 9. THE Runtime SHALL process Approval answers from Chat_Client and Task_CLI through the same Approval mechanism, such that an identical answer from either client produces the same recorded decision and the same Task state transition.
+10. WHERE a Task has the `read-only` Permission_Profile, THE Runtime SHALL permit reads within the Project_Directory and the Vault, SHALL permit no agent writes anywhere, and SHALL itself persist the Task's Result and write the result file into the Results_Location from the agent's final output.
+11. WHERE a Task has the `workspace-write` Permission_Profile, THE Runtime SHALL permit the same reads as `read-only` and agent writes only inside the Results_Location, and SHALL require an explicit preauthorization or an Approval for any write inside the Project_Directory or elsewhere.
+12. THE Runtime SHALL enforce the bounds of criteria 2, 10, and 11 through the backend's sandbox or permission configuration (for example sandbox mode and writable roots), set per Task from its Permission_Profile, and SHALL NOT rely on prompt instructions alone.
+13. IF the chosen Codex integration cannot enforce the Permission_Profile of a Task (Requirement 1.11), THEN THE Runtime SHALL fail closed by not running the Task with writes and SHALL report the reason to the Operator.
+14. THE project SHALL include an automated or smoke check showing that an out-of-bounds write attempt is blocked regardless of the prompt.
+15. WHILE a Task is `awaiting_approval`, THE Runtime SHALL keep the Task's Attempt in the single execution slot so that no execution overlaps, SHALL keep queued Tasks waiting, and SHALL show the stall in status output and chat (decision D25).
 
 ### Requirement 9: Ubuntu service management
 
@@ -198,7 +221,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 2. WHEN systemd starts `pixie-runtime.service`, THE service SHALL start the Runtime without reading any interactive shell startup file, and the Runtime SHALL reach a running state within 30 seconds.
 3. THE Runtime SHALL start, run, and stop without requiring the Chat_Client, the Task_CLI, or any graphical client to be running, and stopping or crashing any of those clients SHALL leave the Runtime process running.
 4. IF the Runtime process exits with a non-zero status or is terminated by a signal other than an Operator-issued stop, THEN THE service SHALL restart the Runtime after a delay that starts at 2 seconds and doubles on each consecutive failure up to a maximum of 60 seconds.
-5. IF the Runtime exits because of a configuration error, THEN THE service SHALL write a log entry identifying the invalid or missing configuration item, and SHALL stop restarting after 5 consecutive failed starts within 300 seconds, leaving the service in a failed state visible in the status command output.
+5. IF the Runtime exits because of a configuration error, or because it refuses to start with a pending Store schema migration (Requirement 4.2), THEN THE service SHALL write a log entry identifying the invalid or missing configuration item or, for a pending migration, the migrate step to run, and SHALL stop restarting after 5 consecutive failed starts within 300 seconds, leaving the service in a failed state visible in the status command output.
 6. THE documentation SHALL list the exact commands to start, stop, restart, show status, and follow logs for `pixie-runtime.service`, and SHALL state the expected observable result of each command.
 7. WHERE user lingering is enabled, THE Runtime SHALL start at boot without any user login and SHALL keep running after the Operator logs out of all sessions. THE Setup_Script SHALL ask the Operator before enabling user lingering, because it is a system change, and SHALL NOT enable it silently.
 8. IF user lingering is unavailable or the Operator declines to enable it, THEN THE documentation SHALL state the reduced lifecycle (the Runtime stops at logout and does not start until the Operator logs in), AND the verification result SHALL record the logout-persistence and boot-before-login criteria as not met, with the reason.
@@ -218,7 +241,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 4. WHEN a client disconnects or closes, whether normally or abnormally, THE Runtime SHALL continue every accepted Task without changing its state and SHALL retain its recorded progress and results.
 5. IF the Runtime is stopped or unreachable, THEN THE Chat_Client and Task_CLI SHALL report within 5 seconds an error indicating the Runtime is unavailable, SHALL exit Task_CLI with a non-zero exit code, and SHALL NOT run a separate assistant process.
 6. WHEN the Operator requests cancellation of an unfinished conversational turn, THE Runtime SHALL stop only that turn and SHALL leave every persisted Task unchanged.
-7. WHEN the Operator requests cancellation of a persisted Task by its identifier, THE Runtime SHALL transition that Task to a cancelled state and SHALL NOT alter any conversational turn or any other Task.
+7. WHEN the Operator requests cancellation of a persisted Task by its identifier, THE Runtime SHALL handle the request under the cancellation request and acknowledgment lifecycle of Requirement 5 (criteria 3 to 6 and 10 to 12), SHALL NOT mark a running Task `cancelled` before the actual execution outcome is established, and SHALL NOT alter any conversational turn or any other Task.
 
 ### Requirement 11: Interactive text chat
 
@@ -261,7 +284,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 #### Acceptance Criteria
 
 1. WHEN the Operator runs `pixie status`, `pixie tasks list`, `pixie tasks show <task-id>`, `pixie results latest`, `pixie approvals list`, or `pixie schedule list`, THE Task_CLI SHALL read the requested data from the Store, print it to standard output, and exit with status zero within 2 seconds when the Store holds up to 1,000 Tasks.
-2. WHEN the Operator runs a Task_CLI command to submit a Task, create or modify a Schedule, approve or deny a pending Approval, or cancel a Task, THE Task_CLI SHALL apply the change to the Store and exit with status zero after the Store has committed it.
+2. WHEN the Operator runs a Task_CLI command to submit a Task, create or modify a Schedule, approve or deny a pending Approval, or cancel a Task, THE Task_CLI SHALL apply the change to the Store and exit with status zero after the Store has committed it, where for a cancellation of a Task with an active Attempt the committed change is the cancellation request and the Task_CLI SHALL report that cancellation is pending until the State changes (Requirement 5.11).
 3. THE Task_CLI and Chat_Client SHALL show identical Tasks, Approvals, and Results, with identical field values, when each reads the Store at the same point in time.
 4. WHEN the Operator submits a Task through the Task_CLI, THE Task_CLI SHALL display its Task identifier only after the Store has committed the Task.
 5. IF the Operator names a Task identifier that does not exist, THEN THE Task_CLI SHALL print an error message indicating the Task was not found, make no change to the Store, and exit with a non-zero status.
@@ -304,26 +327,28 @@ This document is a specification only. Nothing in it authorizes implementation, 
 1. THE Setup_Script SHALL define all installation steps, and THE Installer_Wizard SHALL invoke the Setup_Script to perform installation without implementing any installation step itself.
 2. THE Setup_Script SHALL install only Phase 0 dependencies by default and SHALL NOT install Backtalk models, audio packages, or visual components.
 3. WHEN the Setup_Script completes an installation, THE Setup_Script SHALL record, for each installed component, its remote location, its Reviewed_Revision, and the exact version of each dependency installed.
-4. WHEN the Setup_Script is run on an existing installation, THE Setup_Script SHALL leave existing configuration files, Vault contents, and Store data byte-identical to their state before the run, except for changes made by a displayed and applied configuration migration.
-5. WHEN a configuration migration is required, THE Setup_Script SHALL display the full list of configuration changes (each key added, changed, or removed, with old and new values) before applying any change.
+4. WHEN the Setup_Script is run on an existing installation, THE Setup_Script SHALL NOT delete, overwrite, or move existing Operator_Content, and the only permitted changes SHALL be creating missing files and folders (initialization), updating Setup_Managed_Files, and applying displayed, versioned migrations after a backup. Normal Runtime writes (Store records, and Vault notes written by Tasks under Requirements 3 and 8) are not violations of this criterion.
+5. WHEN a configuration migration is required, THE Setup_Script SHALL display the full list of configuration changes (each key added, changed, or removed, with old and new values, and credential values redacted under Requirement 15) before applying any change, SHALL make a backup copy of the affected files under the Runtime_Home before the change, and SHALL version each configuration migration.
 6. WHEN the Operator runs the Doctor_Script, THE Doctor_Script SHALL check the Runtime service, Store version, configuration, Codex authentication state, and Vault path, and SHALL report a pass or fail result with a reason for each of the five checks within 30 seconds.
 7. IF one or more Doctor_Script checks fail, THEN THE Doctor_Script SHALL still report the result of every remaining check and SHALL exit with a non-zero status.
 8. IF a Setup_Script prerequisite is missing, THEN THE Setup_Script SHALL stop before modifying any file, name each missing prerequisite, and exit with a non-zero status.
 9. THE Setup_Script SHALL NOT install, register, or configure Obsidian, and SHALL NOT read or modify any Obsidian configuration, including `obsidian.json` and any `.obsidian` folder.
 10. THE Vault SHALL be usable as plain Markdown files without Obsidian, and THE Doctor_Script SHALL NOT require Obsidian to be present and SHALL NOT fail any check because Obsidian is absent.
+11. WHILE the Runtime is stopped and no migration is pending, WHEN the Setup_Script is re-run, THE preservation check SHALL show Operator-owned configuration files, credential files, and Vault notes content-identical by hash comparison, and all pre-existing Store records logically unchanged by row-level comparison (SQLite file bytes are not compared, because checkpoints and journaling alter them).
+12. WHILE the Runtime is running, THE preservation check SHALL be limited to records and files that the Runtime does not write.
 
 ### Requirement 17: Version-aware updates
 
-**User Story:** As the Operator, I want updates to be explicit, so that my adaptations are not silently replaced.
+**User Story:** As the Operator, I want updates to be explicit and recoverable by a documented procedure, so that my adaptations are not silently replaced.
 
 #### Acceptance Criteria
 
 1. WHEN the Operator starts an update, THE update procedure SHALL fetch only from the configured forks and SHALL apply only the component versions recorded in the version manifest.
 2. IF an update would move any component to a version different from its recorded version, THEN THE update procedure SHALL display the component name, the current version, and the target version, and SHALL wait for explicit Operator confirmation (yes/no) before applying that change.
-3. IF the Operator declines confirmation or does not respond within 300 seconds, THEN THE update procedure SHALL exit without modifying any component, SHALL leave all recorded versions unchanged, and SHALL report that no update was applied.
+3. THE documented update and recovery procedure SHALL consist of these ordered steps: stop the service; back up the Runtime_Home configuration and the Store; show the incoming changes from the configured remotes; apply only the pinned revisions after explicit Operator confirmation; run the migrate step if needed (Requirement 4.2); run the Doctor_Script; restart the service. IF the Operator declines confirmation, THEN the procedure SHALL apply no change and leave all recorded versions unchanged. The Phase 0 components SHALL be this repository and the Vault_Template_Repo only.
 4. WHEN an update is available, THE update procedure SHALL display the list of changed components and, for each one, the commit list between the current and target versions (with a count of changed files) before applying anything.
-5. WHEN an update is applied, THE update procedure SHALL leave Runtime_Home configuration, Store, Vault, and credentials byte-for-byte identical to their pre-update contents.
-6. IF an update fails for any component, THEN THE update procedure SHALL stop, SHALL restore every component to its pre-update version, SHALL leave Runtime_Home configuration, Store, Vault, and credentials unchanged, and SHALL report an error that identifies the failed component and the reason.
+5. WHEN an update is applied, THE update procedure SHALL NOT delete, overwrite, or move existing Operator_Content, subject to the permitted changes and the preservation checks of Requirement 16.4, 16.11, and 16.12.
+6. IF an update fails, THEN THE update procedure SHALL stop, SHALL report an error that identifies the failed component and the reason, and SHALL point to the documented manual recovery procedure, which restores the backup taken in criterion 3 and checks out the previously recorded revisions. THE recovery SHALL be a documented manual procedure and SHALL NOT be automatic.
 7. WHEN an update is applied, THE update procedure SHALL leave all upstream attribution and license notice files and headers present and with unmodified content in every updated component.
 
 ### Requirement 18: Repository disposition
@@ -332,22 +357,22 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 #### Acceptance Criteria
 
-1. THE project SHALL adapt `CLAUDE.md` and `fullstack-agent.md` into a single `AGENTS.md` at the repository root that contains a development rules section and a Pixie identity template section, and SHALL remove the Claude Code installer boot path from the Phase 0 flow.
+1. THE project SHALL adapt `CLAUDE.md` and `fullstack-agent.md` into a root `AGENTS.md` that contains repository development rules only, SHALL keep Pixie's installed identity and memory instructions in a separate template `templates/agent/AGENTS.md` (as in section 4.11 of the source plan) that the Setup_Script installs to the configured Agent_Instructions location, SHALL NOT merge the two files, and SHALL remove the Claude Code installer boot path from the Phase 0 flow.
 2. THE project SHALL adapt `README.md`, `TROUBLESHOOTING.md`, and `CONTRIBUTING.md` so that each file describes Pixie Phase 0, Codex, and the Ubuntu service lifecycle, and so that none of them references Claude Code as a prerequisite or setup path.
 3. THE project SHALL adapt `start.sh` and `update.sh` so that no voice, face, or hands launcher starts, stops, or restarts the Runtime, and so that the Runtime lifecycle is controlled only by the Ubuntu service.
 4. THE project SHALL remove the Claude Code prerequisite and the `claude "set me up"` setup path from the Phase 0 flow, so that a search of the Phase 0 documentation and scripts for "claude" outside the legacy location and upstream attribution returns zero matches.
 5. THE project SHALL replace the Desktop launcher flow, the blind pull-latest update, and the Claude-specific wiring (for example `backtalk.json` wiring) in the Phase 0 flow, so that the Phase 0 flow contains zero references to each of them and the update path fetches and shows the incoming changes to the Operator before applying any of them.
 6. THE project SHALL preserve the AGPL-3.0-or-later `LICENSE` file byte-for-byte, the copyright notice of Jared Rhodenizer, and upstream attribution in every adapted file.
-7. THE project SHALL NOT delete, overwrite, or move any Operator file, and SHALL NOT modify the Operator's configuration, state, or Vault, during adoption, install, or update.
+7. THE project SHALL NOT delete, overwrite, or move any existing Operator_Content during adoption, install, or update, and the only permitted changes SHALL be those defined in Requirement 16.4.
 8. THE project SHALL preserve the separate license file of each component and the complete git history of the fork, with no history rewrite, squash, or force push of existing commits.
 9. THE project SHALL add a git remote named `upstream` pointing to `jaredrhod/fullstack-agent`, and SHALL record in a version-controlled file the Reviewed_Revision (git commit hash) of each reviewed repository, including `5bb159f` for this fork.
 10. THE project SHALL retain each original Claude-oriented file, in unmodified form, either in git history or in a directory named `legacy`, with a README in that directory stating the files are retained pending the Operator's removal decision, until the Operator decides to remove them.
-11. WHEN the Operator asks during implementation, THE project SHALL move `always-on-agent-prototype-plan.md` to `docs/` and commit it there, as decided by the Operator.
-12. IF the Operator has not yet asked for the move during implementation, THEN THE project SHALL leave `always-on-agent-prototype-plan.md` in its current location and SHALL NOT delete it.
-13. IF an adaptation step would delete, overwrite, or move an Operator file, THEN THE project SHALL abort that step, leave the file unchanged, and report to the Operator an error identifying the file and the step.
+11. THE project SHALL keep the plan file at `docs/always-on-agent-prototype-plan.md`, the move from the repository root having been done at the Operator's request, and WHEN the Operator asks for a commit, THE project SHALL record the move in that commit.
+12. IF the move of the plan file to `docs/` is not yet committed, THEN THE project SHALL leave the file at `docs/always-on-agent-prototype-plan.md` and SHALL NOT delete it.
+13. IF an adaptation step would delete, overwrite, or move existing Operator_Content, THEN THE project SHALL abort that step, leave the content unchanged, and report to the Operator an error identifying the file and the step.
 14. THE project SHALL keep Vault_Template_Repo templates and any adapted Vault text licensed under CC BY-SA 4.0 with attribution to Jared Rhodenizer and share-alike preserved, SHALL keep them in their own license file separate from the AGPL-3.0-or-later license of the Runtime, and SHALL document the mixed licensing (AGPL Runtime, CC BY-SA templates) in the repository documentation. Vault-derived templates SHALL remain only in the Vault_Template_Repo under CC BY-SA 4.0, and the Pixie identity template in this repository SHALL be original text that borrows ideas but not sentences from them. THE documentation SHALL state that this is not legal advice and that a qualified review is advised before publishing or selling.
 15. THE project SHALL replace, in the Phase 0 flow, the following Claude-specific Vault parts: the `templates/MEMORY.md` redirect, the `~/.claude/projects` memory migration, the Claude-as-executor framing of the wizard, and the shipped Jarvis identity (name, tone, and welcome line).
-16. THE project SHALL provide a Pixie identity block with a neutral default name, tone, and welcome line in place of the Jarvis identity.
+16. THE project SHALL provide a Pixie identity block with a neutral default name, tone, and welcome line in place of the Jarvis identity, located in the separate template `templates/agent/AGENTS.md` (Requirement 18.1).
 17. THE project SHALL record in a version-controlled file the Reviewed_Revisions `5bb159f` (fullstack-agent fork) and `659bba9` (Vault_Template_Repo fork).
 18. THE project SHALL adapt the Vault_Template_Repo in place as a template repository, and SHALL configure a git remote named `upstream` in that repository pointing to `https://github.com/jaredrhod/ai-memory-vault.git`.
 
@@ -361,7 +386,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 2. THE project SHALL include real Codex smoke tests for behavior that mocks cannot establish, each with a maximum runtime of 120 seconds, and each reporting a timeout as a failure instead of hanging.
 3. THE project SHALL include a manual verification procedure covering systemd service start, stop, and restart, user logout, and host reboot, where each step states the action to perform, the expected observable outcome, and a pass/fail recording field.
 4. THE project SHALL provide an operations runbook (`docs/operations.md`) that describes the end-to-end scenario as an ordered list of steps, each with the command to run and the expected observable result.
-5. WHEN the end-to-end scenario runs, THE scenario SHALL use as its workflow a summary of the state of a development project, reading the project directory read-only and writing the summary as a result file, WHERE the Operator chooses which project through configuration, AND THE verification result SHALL show, as separate pass/fail items, that a task scheduled through `pixie chat` executes after the client closes, delivers its Result or retains it when delivery is not possible, survives a service restart without losing the task or its Result, and appears in both chat history and Task_CLI history.
+5. WHEN the end-to-end scenario runs, THE scenario SHALL use as its workflow a summary of the state of a development project, reading the Project_Directory read-only under the `read-only` Permission_Profile and having the Runtime write the summary as a result file into the Results_Location (Requirement 8.10), WHERE the Operator chooses which project through configuration, AND THE verification result SHALL show, as separate pass/fail items, that a task scheduled through `pixie chat` executes after the client closes, delivers its Result or retains it when delivery is not possible, survives a service restart without losing the task or its Result, and appears in both chat history and Task_CLI history.
 6. IF a criterion cannot be verified or a known limitation exists, THEN THE verification result SHALL record that criterion as "unverified" or list it under known limitations, with the reason, and SHALL NOT count it as passed.
 7. IF an automated test, smoke test, or end-to-end scenario step fails, THEN THE verification result SHALL record the overall outcome as failed, identify the failing item, and retain the results of the items that did run.
 8. THE automated tests SHALL use the fake Codex_Adapter and SHALL NOT require network access or an installed Codex.
@@ -373,7 +398,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 #### Acceptance Criteria
 
-1. THE Runtime SHALL expose Conversation handling, task operations (create, list, get, cancel), approvals (list pending, approve, reject), and Result history (list, get) through a single client interface that the Phase 0 text client uses for 100% of its Runtime interactions.
+1. THE Runtime SHALL expose Conversation handling, task operations (create, list, get, request cancellation under Requirement 5), approvals (list pending, approve, reject), and Result history (list, get) through a single client interface that the Phase 0 text client uses for 100% of its Runtime interactions.
 2. THE Runtime SHALL accept every operation listed in criterion 1 from any client that implements the client interface, without requiring changes to Runtime scheduler, Store, or memory code.
 3. THE Runtime SHALL remain the only process that reads or writes the scheduler state, the Store, and memory in all phases, and no client SHALL access them directly.
 4. WHEN two clients are connected to the Runtime at the same time, THE Runtime SHALL apply operations from both clients to the same scheduler, Store, and memory, and return results for each operation to the client that issued it.
@@ -383,7 +408,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 
 ## Assumptions and Unresolved Decisions
 
-The following items are assumptions or open decisions. Each must be resolved or confirmed by the stated point, and the design phase SHALL NOT silently choose a value for them.
+The following items are assumptions or decisions. Items marked RESOLVED are settled; every other item must be resolved or confirmed by the stated point, and the design phase SHALL NOT silently choose a value for them.
 
 | ID | Item | Current position | Resolve by |
 | --- | --- | --- | --- |
@@ -392,20 +417,23 @@ The following items are assumptions or open decisions. Each must be resolved or 
 | D3 | Authentication route and billing (subscription or API-billed) | OPEN. The Operator has a ChatGPT subscription (no API key). Whether it supports unattended use, its limits, and its terms for automated use are verified by the spike (Requirements 1.8, 1.9). | Requirement 1 spike (P0-01) |
 | D4 | Runtime language and storage | RESOLVED: Python and SQLite. | Resolved |
 | D5 | Logout and boot lifecycle | OPEN. Aim for user lingering so the Runtime starts at boot and survives logout; setup asks before enabling it (Requirements 9.7, 9.8). Actual behavior is verified and recorded as met, not met, or unverified. | Manual verification |
-| D6 | First bounded real workflow for end-to-end verification | RESOLVED: a summary of the state of a development project, read-only on the project directory, with the result written as a result file. The Operator chooses which project through configuration (Requirement 19.5). | Resolved |
+| D6 | First bounded real workflow for end-to-end verification | RESOLVED: a summary of the state of a development project, read-only on the Project_Directory under the `read-only` Permission_Profile, with the result file written into the Results_Location by the Runtime, not by the agent. The Operator chooses which project through configuration (Requirement 19.5). | Resolved |
 | D7 | Vault location and whether ai-memory-vault is adapted in place or vendored | RESOLVED for adaptation: adapted in place as a template repository (Vault_Template_Repo). The Vault location itself is set in Runtime_Home configuration (Requirement 3.15). | Resolved |
 | D8 | Platform scope: Phase 0 targets Ubuntu with systemd, while existing scripts also support macOS and Windows | RESOLVED: Phase 0 is Linux-only (Ubuntu, systemd). The macOS and Windows scripts remain untouched or marked legacy. Listed as out of scope and reflected in the Introduction and Requirement 18. | Resolved |
 | D9 | Rename of the repository, directories, and references from `fullstack-agent` to Pixie | RESOLVED: keep repository and directory names. Only user-facing names change now (`pixie` command, `pixie-runtime.service`, assistant name Pixie). A full rename may be revisited later. | Resolved |
-| D10 | Disposition of the untracked `always-on-agent-prototype-plan.md` | RESOLVED: move it to `docs/` and commit it. The move and commit happen only when the Operator asks during implementation (Requirement 18.11, 18.12). | Resolved |
+| D10 | Disposition of `always-on-agent-prototype-plan.md` | RESOLVED and DONE: moved to `docs/` at the Operator's request (staged, uncommitted); committing it awaits the Operator's request (Requirement 18.11, 18.12). | Resolved |
 | D11 | Local runtime transport (Unix domain socket or other user-restricted channel) | RESOLVED: Unix domain socket with owner-only permissions (Requirement 10.1). | Resolved |
 | D12 | Handling of pre-existing Claude-era artifacts on the Operator's machine (a `CLAUDE.md` in a parent folder, existing vault) | RESOLVED: setup never edits a parent `CLAUDE.md` or an existing vault (Requirement 18.7). | Resolved |
 | D13 | Default values: timeouts, retry limit, heartbeat interval, backoff, missed-run default policy | RESOLVED: use the defaults in the detailed criteria: 60 s lease, 15 s heartbeat, 300 s timeout, 3 retries, 2-60 s backoff (Requirements 7 and 9). Default missed-run policy: skip. | Resolved |
 | D14 | Recurring schedule format (cron-like, interval, or other) | RESOLVED: recurring schedules use standard 5-field cron plus an explicit IANA timezone (default America/Montevideo); the evaluation library is a design choice. One-off remains its own Schedule type. Cron limits: it cannot express a one-off run or an even every-N-hours cadence beyond the day. See Requirements 6.1 and 12.5. | Resolved |
 | D15 | Desktop notification mechanism on Ubuntu | RESOLVED: libnotify `notify-send` is the optional mechanism and must not block execution (Requirements 14.3, 14.4). | Resolved |
-| D16 | Permission_Profile model and preauthorization format | RESOLVED: named Permission_Profiles, the first two being `read-only` and `workspace-write`. Preauthorizations are stored as explicit entries naming the exact operation (Requirement 8). | Resolved |
+| D16 | Permission_Profile model and preauthorization format | RESOLVED: named Permission_Profiles, the first two being `read-only` (reads in Project_Directory and Vault, Runtime writes the result file) and `workspace-write` (same reads, agent writes only in the Results_Location), enforced through the backend sandbox (Requirement 8.10 to 8.13). Preauthorizations are stored as explicit entries naming the exact operation (Requirement 8). | Resolved |
 | D17 | Role of Obsidian | RESOLVED: optional in Phase 0, never installed, registered, or configured by setup (Requirement 16.9, 16.10). | Resolved |
-| D18 | License compatibility between the AGPL-3.0-or-later Runtime and CC BY-SA 4.0 templates | RESOLVED (Option A): Pixie's `AGENTS.md` identity template is written from scratch in this AGPL repository as original text, borrowing ideas but not sentences from the CC BY-SA vault templates. Vault-derived templates stay only in the vault fork under CC BY-SA 4.0 (Requirements 3.1, 18.14). This is not legal advice; a qualified review is advised before publishing or selling. | Resolved |
+| D18 | License compatibility between the AGPL-3.0-or-later Runtime and CC BY-SA 4.0 templates | RESOLVED (Option A): Pixie's `templates/agent/AGENTS.md` identity template is written from scratch in this AGPL repository as original text, borrowing ideas but not sentences from the CC BY-SA vault templates. Vault-derived templates stay only in the vault fork under CC BY-SA 4.0 (Requirements 3.1, 18.14). This is not legal advice; a qualified review is advised before publishing or selling. | Resolved |
 | D19 | Whether the optional personalization interview wizard is kept for Codex in Phase 0 or deferred | RESOLVED: deferred out of Phase 0 (Requirement 3.12, Out of Scope). | Resolved |
+| D25 | Execution slot during approval waits | RESOLVED: in Phase 0 a Task in `awaiting_approval` keeps its Attempt and the single execution slot, queued Tasks wait behind it, and the stall is visible in status output and chat (Requirement 8.15). Parking the Attempt to free the slot is explicitly deferred to a later phase. | Resolved |
+| D26 | Store schema migration timing | RESOLVED: migrating an existing Store to a newer schema is an explicit Operator-invoked step that shows pending migrations, takes a verified SQLite backup, and applies each migration in its own transaction. Initialization of a missing Store is automatic. The Runtime refuses to start while a migration is pending and tells the Operator which step to run (Requirements 4.2, 4.3, 9.5). | Resolved |
+| D27 | Permission_Profile of the project-summary workflow | RESOLVED: the project-summary workflow runs under the `read-only` Permission_Profile, and the Runtime persists the Result and writes the result file into the Task's Results_Location from the agent's final output. `workspace-write` remains available for future workflows that need agent-written artifacts (Requirements 8.10, 8.11, 19.5; D6). | Resolved |
 
 ## Test Scope
 
@@ -418,13 +446,20 @@ The Codex_Adapter is replaced by a fake that emits scripted events. These checks
 - State transitions: the lifecycle permits only valid transitions and terminal states reject further changes (Requirement 5).
 - Scheduling: timezone handling for America/Montevideo, one-off and recurring due-time computation, missed-run skip and catch-up policies, and no duplicate enqueue of the same Occurrence (Requirement 6).
 - Restart recovery: stale lease reconciliation, bounded retry, and blocked state for possible external actions (Requirement 7).
+- Immediate-restart reconciliation with unexpired leases, instance identifiers, and the single-instance lock (Requirement 7.4, 7.10 to 7.12).
+- Attempt timeout paused during an approval wait and resumed with the remaining budget (Requirement 7.3).
+- Cancellation request and acknowledgment lifecycle, including restart with a pending cancellation (Requirement 5.10 to 5.12).
+- Backend-enforced permission bounds with an out-of-bounds negative case that is blocked regardless of the prompt (Requirement 8.12 to 8.14).
+- Store migration: backup, refusal to start with a pending migration, and rollback of a failed migration (Requirement 4.2, 4.3).
+- Preservation checks under the stated conditions: hash comparison of Operator-owned files and row-level comparison of Store records (Requirement 16.11, 16.12).
+- Model and reasoning effort configuration validation (Requirement 2.11).
 - Delivery persistence: a Result is saved before Delivery, and a failed Delivery leaves the Task State unchanged (Requirement 14).
 - Permission and approval enforcement: no silent grant, exact-operation binding, denial behavior, and the no-client case (Requirement 8).
 - Adapter event mapping: each supported event maps to one Application_Event, and unsupported events are recorded (Requirement 2).
 - Chat-to-task registration: confirmation follows a committed record, and ambiguous schedules create nothing (Requirement 12).
 - Conversation resumption and serialization of turns (Requirement 11).
 - Client detachment: disconnecting a client leaves accepted Tasks running (Requirement 10).
-- Setup idempotency: running the Setup_Script twice leaves configuration, Vault, and state unchanged (Requirement 16).
+- Setup idempotency: running the Setup_Script twice with no pending migration leaves Operator_Content unchanged under the conditions of Requirement 16.11 and 16.12.
 - Store migrations and schema version refusal (Requirement 4).
 
 ### Property-based testing candidates
@@ -437,6 +472,8 @@ The Codex_Adapter is replaced by a fake that emits scripted events. These checks
 - Round trip: serializing and deserializing Application_Events, Schedules, and configuration files returns an equivalent object.
 - Event mapping: for any generated supported event, mapping is total and produces exactly one Application_Event.
 - Approval binding: for any generated pending Approvals and decisions, a decision affects only its own Approval.
+- Single active Attempt: at most one active Attempt exists overall at any instant, including across restarts.
+- Timeout accounting: time spent in `awaiting_approval` never counts toward the Attempt timeout.
 
 ### Bounded real Codex smoke tests
 
