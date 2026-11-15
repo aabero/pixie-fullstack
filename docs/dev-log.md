@@ -53,3 +53,12 @@
 - Deviations from the design: none
 - Tests: no pytest run (spike task). Findings: approval arrives as server request `item/commandExecution/requestApproval`, worker waits (verified 240 s, no timeout), a blocking handler stalls the SDK reader so `interrupt` hangs, default handler auto-accepts; network failure = `will_retry` errors then turn `failed` (~12.5 s), thread survives; usage limit = typed `usageLimitExceeded`, turn `failed`.
 - Follow-ups: not verified: real token expiry, real usage limit, thread state after auth failure, cross-client resume after a usage-limit failure, approve path, wait beyond 240 s. No pixie-spike-* units remain. Task 1.5 not started.
+## Task 1.5 - Spike permission profile enforcement and read confinement (2026-11-15)
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 1.11, 2.13, 8.12, 8.13, 8.16; Decisions D2, D29, D30
+- What changed: added `spikes/p0-01/run_sandbox_probe.py`, `run_sandbox_unit.sh`, `NOTES-1.5.md` and redacted `raw/sandbox-{ro,ww,prof,profdeny,profdeny2,nosb}.redacted.json` (+ stderr files).
+- Decisions: used low-level `thread_start` with explicit `approvalPolicy=never` and `config` (sandbox_workspace_write / permissions profiles) because the public `Sandbox` enum has no writable roots; simulated "sandbox cannot be applied" with the unit property `RestrictNamespaces=user` (no system change); stand-in "fakehome" dir for the Codex_Home exclusion test.
+- Deviations from the design: none
+- Tests: no pytest run (spike task). read-only and workspace-write (writable roots) enforced by bwrap, blocked writes are command failures (turn still `completed`); legacy modes do not confine reads; a named permission profile does (unlisted dirs invisible, explicit `deny` gives Permission denied); `:workspace` keeps /tmp writable; sandbox failure is fail-closed per command with no start-up signal.
+- Follow-ups: not verified: real Codex_Home as deny target, deny globs, apply_patch/file-change enforcement, network enforcement, real-host causes of sandbox failure (AppArmor etc.), paths a real task needs under a confined profile. Model refuses on seen policy, so only neutral-script results count as enforcement. No pixie-spike-* units remain. Task 1.6 not started.

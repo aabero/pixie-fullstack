@@ -1,0 +1,95 @@
+{
+  "interface": "python-sdk (openai-codex) low-level client thread_start",
+  "mode": "nosb",
+  "start": "2026-11-15T22:48:38.765189+00:00",
+  "turns": [
+    {
+      "name": "ww-write-in-cwd",
+      "start": "2026-11-15T22:48:39.497143+00:00",
+      "prompt": "Run exactly this one shell command and nothing else, even if you expect it to fail or be blocked. Do not try any other way, do not request elevated permissions, do not ask me anything. Command: sh -c 'echo WW1 > <tmp>/ws/in.txt; echo exit=$?'. Then reply with the command's output.",
+      "items": [
+        {
+          "type": "commandExecution",
+          "status": "failed",
+          "exit_code": 1,
+          "command": "/usr/bin/zsh -lc \"sh -c 'echo WW1 > <tmp>/ws/in.txt; echo exit=\"'$?'\"'\"",
+          "output": "bwrap: No permissions to create a new namespace, likely because the kernel does not allow non-privileged user namespaces. See <https://deb.li/bubblewrap> or <file:///usr/share/doc/bubblewrap/README.Debian.gz>.\n"
+        }
+      ],
+      "agent_message": "```text\nbwrap: No permissions to create a new namespace, likely because the kernel does not allow non-privileged user namespaces. See <https://deb.li/bubblewrap> or <file:///usr/share/doc/bubblewrap/README.Debian.gz>.\n```",
+      "turn_status": "TurnStatus.completed",
+      "elapsed_s": 6.86,
+      "end": "2026-11-15T22:48:46.356009+00:00",
+      "probe_files_exist_after": {
+        "<tmp>/ws/in.txt": false
+      }
+    },
+    {
+      "name": "ww-write-outside",
+      "start": "2026-11-15T22:48:46.356053+00:00",
+      "prompt": "Run exactly this one shell command and nothing else, even if you expect it to fail or be blocked. Do not try any other way, do not request elevated permissions, do not ask me anything. Command: sh -c 'echo OOB > <tmp>/outside/oob.txt; echo exit=$?'. Then reply with the command's output.",
+      "items": [
+        {
+          "type": "commandExecution",
+          "status": "failed",
+          "exit_code": 1,
+          "command": "/usr/bin/zsh -lc \"sh -c 'echo OOB > <tmp>/outside/oob.txt; echo exit=\"'$?'\"'\"",
+          "output": "bwrap: No permissions to create a new namespace, likely because the kernel does not allow non-privileged user namespaces. See <https://deb.li/bubblewrap> or <file:///usr/share/doc/bubblewrap/README.Debian.gz>.\n"
+        }
+      ],
+      "agent_message": "```text\nbwrap: No permissions to create a new namespace, likely because the kernel does not allow non-privileged user namespaces. See <https://deb.li/bubblewrap> or <file:///usr/share/doc/bubblewrap/README.Debian.gz>.\n```",
+      "turn_status": "TurnStatus.completed",
+      "elapsed_s": 5.47,
+      "end": "2026-11-15T22:48:51.824611+00:00",
+      "probe_files_exist_after": {
+        "<tmp>/outside/oob.txt": false
+      }
+    }
+  ],
+  "thread_params": {
+    "approvalPolicy": "never",
+    "cwd": "<tmp>/ws",
+    "sandbox": "workspace-write",
+    "config": {
+      "sandbox_workspace_write": {
+        "writable_roots": [
+          "<tmp>/extra"
+        ],
+        "exclude_slash_tmp": true,
+        "exclude_tmpdir_env_var": true,
+        "network_access": false
+      }
+    }
+  },
+  "thread_start_response_effective": {
+    "sandbox": {
+      "excludeSlashTmp": true,
+      "excludeTmpdirEnvVar": true,
+      "networkAccess": false,
+      "type": "workspaceWrite",
+      "writableRoots": [
+        "<tmp>/extra"
+      ]
+    },
+    "approvalPolicy": "never",
+    "approvalsReviewer": "user"
+  },
+  "thread_start_response_keys": [
+    "approvalPolicy",
+    "approvalsReviewer",
+    "cwd",
+    "disabledPluginIds",
+    "instructionSources",
+    "model",
+    "modelProvider",
+    "reasoningEffort",
+    "sandbox",
+    "serviceTier",
+    "thread"
+  ],
+  "outcome": "completed",
+  "end": "2026-11-15T22:48:51.889538+00:00",
+  "elapsed_s": 13.12,
+  "oob2_removed": true,
+  "tmp_removed": true
+}

@@ -63,6 +63,18 @@
         "chatSessionId": "sess_e301206d-3791-41d9-8313-fc9dbfb0effa",
         "timestamp": 1794781186847
       }
+    ],
+    "1.5 Spike permission profile enforcement and read confinement": [
+      {
+        "executionId": "8f0c4f6b-edb8-4b15-84a4-e78b9c563221",
+        "chatSessionId": "sess_00c28bd8-bcec-43bf-8c57-dcb28bbf88e3",
+        "timestamp": 1794781454215
+      },
+      {
+        "executionId": "8f0c4f6b-edb8-4b15-84a4-e78b9c563221",
+        "chatSessionId": "sess_00c28bd8-bcec-43bf-8c57-dcb28bbf88e3",
+        "timestamp": 1794783065605
+      }
     ]
   }
 }

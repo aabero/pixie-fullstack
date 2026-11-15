@@ -38,7 +38,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Trigger an approval request; record how it surfaces to application code and, with no user connected, the observed worker behavior and elapsed time.
     - Reproduce or simulate expired auth, network failure and usage limit; record the signal for each and whether thread state is preserved; mark anything not reproducible "not verified" with the reason.
     - _Requirements: 1.5, 1.6; Decisions: D2, D3_
-  - [ ] 1.5 Spike permission profile enforcement and read confinement
+  - [x] 1.5 Spike permission profile enforcement and read confinement
     - Verify `read-only` and `workspace-write` enforcement through the backend sandbox configuration (sandbox mode, writable roots); record the mechanism and any profile that cannot be enforced.
     - Record whether reads can be confined to listed directories and whether the Codex_Home can be excluded from reads.
     - Run an out-of-bounds write attempt under a prompt demanding it; confirm it is blocked and that the sandbox is not silently doing nothing.
