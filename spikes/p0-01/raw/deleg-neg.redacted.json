@@ -1,0 +1,62 @@
+{
+  "mechanism": "host tool: stdio MCP server via thread_start config.mcp_servers (default_tools_approval_mode=approve, approvalPolicy=never, read-only sandbox)",
+  "case": "neg",
+  "input": "What is the capital of Portugal? Just answer, no need to set anything up.",
+  "start": "2026-11-15T23:32:50.917519+00:00",
+  "events": [
+    {
+      "t": 0.76,
+      "method": "turn/started"
+    },
+    {
+      "t": 1.87,
+      "method": "item/started",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 1.87,
+      "method": "item/completed",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 4.01,
+      "method": "item/started",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 4.01,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.01,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.01,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.01,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 4.01,
+      "method": "item/completed",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 4.01,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 4.02,
+      "method": "turn/completed",
+      "turn_status": "TurnStatus.completed"
+    }
+  ],
+  "tool_items": [],
+  "final_message": "Lisbon.",
+  "outcome": "completed",
+  "end": "2026-11-15T23:32:54.966834+00:00",
+  "elapsed_s": 4.05
+}

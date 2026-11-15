@@ -87,6 +87,18 @@
         "chatSessionId": "sess_aa201dea-ebc7-4e47-929d-ef5d2523e5f0",
         "timestamp": 1794785042947
       }
+    ],
+    "1.7 Spike natural-language delegation proof": [
+      {
+        "executionId": "29ec162b-de54-44ce-bf2f-93b580e9f98b",
+        "chatSessionId": "sess_80446ab6-8146-4c19-bff8-25bd3844c23a",
+        "timestamp": 1794785213533
+      },
+      {
+        "executionId": "29ec162b-de54-44ce-bf2f-93b580e9f98b",
+        "chatSessionId": "sess_80446ab6-8146-4c19-bff8-25bd3844c23a",
+        "timestamp": 1794785624263
+      }
     ]
   }
 }

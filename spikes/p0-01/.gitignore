@@ -1,2 +1,3 @@
 .codex-home/
 .venv/
+stub/*.db

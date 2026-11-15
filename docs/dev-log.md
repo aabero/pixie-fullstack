@@ -71,3 +71,14 @@
 - Deviations from the design: none. Finding that contradicts the task's expectation: outside a Git repo, ancestor AGENTS.md files are still loaded. Config `project_root_markers=[]` (cwd file only) or `project_doc_max_bytes=0` (none) switched it off in the canary runs. This repo has no root AGENTS.md, so that case used a canary parent. Needs a note in report item 17 (Requirement 3.16).
 - Tests: no pytest run (spike task). explicit (developerInstructions/baseInstructions) and inline work; codex_home discovery works, delivery not verified; model/effort set via thread/turn params or config keys, invalid values fail the turn (modelNotFound, 400 unsupported_value), not at start.
 - Follow-ups: not verified: global file reaching the model, global file vs `project_doc_max_bytes=0`, walk-up beyond the temp parent, turn-level effort echo, each model/effort pair. No pixie-spike-* units remain. Task 1.7 not started.
+
+## Task 1.7 - Spike natural-language delegation proof (2026-11-15)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 1.14, 12.1; D2
+- What changed: added `spikes/p0-01/stub/` (SQLite stub store plus a dependency-free stdio MCP server), `run_delegation_probe.py`, `run_delegation_unit.sh`, `NOTES-1.7.md`, redacted `raw/deleg-*`, and `stub/*.db` in the spike `.gitignore`.
+- Decisions: tried host tools (MCP) first and stopped there; dynamic tools, structured output and slash commands were not tried. Set `default_tools_approval_mode="approve"` on the stub server because run 1 failed with approvalPolicy=never.
+- Deviations from the design: none.
+- Tests: no pytest (spike). Executed runs: task -> `task-aeae2a74` and propose_schedule -> `sched-9bd59551`, both read back from SQLite; negative case made no call (weak: prompt said not to set anything up). Run 1 without pre-approval failed, as recorded.
+- Follow-ups: MCP calls need pre-approval or an approval handler; MCP servers run outside the thread sandbox; determinism and a neutral negative case not verified. Dynamic tools and structured output not verified (not needed).

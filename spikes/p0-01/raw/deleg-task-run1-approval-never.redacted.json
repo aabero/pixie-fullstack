@@ -1,0 +1,277 @@
+{
+  "mechanism": "host tool: stdio MCP server via thread_start config.mcp_servers",
+  "case": "task",
+  "input": "Please remind me to renew my library card: set up a one-off task called 'Renew library card' for me to do this week.",
+  "start": "2026-11-15T23:29:13.573328+00:00",
+  "events": [
+    {
+      "t": 1.23,
+      "method": "turn/started"
+    },
+    {
+      "t": 2.22,
+      "method": "item/started",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 2.22,
+      "method": "item/completed",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 4.64,
+      "method": "item/started",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.64,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.78,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.0,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.0,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.0,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.0,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.0,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.0,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.0,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.0,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 5.4,
+      "method": "item/completed",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 5.7,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 5.72,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 8.88,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 8.89,
+      "method": "item/started",
+      "item_type": "mcpToolCall"
+    },
+    {
+      "t": 8.89,
+      "method": "item/completed",
+      "item_type": "mcpToolCall"
+    },
+    {
+      "t": 8.89,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 10.82,
+      "method": "item/started",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 10.82,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.15,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.43,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.43,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.43,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.43,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 11.48,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 11.49,
+      "method": "item/completed",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 11.5,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 11.51,
+      "method": "turn/completed",
+      "turn_status": "TurnStatus.completed"
+    }
+  ],
+  "tool_items": [
+    "{\"app_context\": null, \"arguments\": {\"title\": \"Renew library card\", \"instructions\": \"Remind me to renew my library card this week. This is a one-off task.\"}, \"completed_at_ms\": null, \"duration_ms\": null, \"error\": null, \"id\": \"exec-0fa54e9e-8f1c-4b13-9383-16a499ac6b04\", \"mcp_app_resource_uri\": null, \"mcp_app_ui\": null, \"plugin_id\": null, \"read_only_hint\": null, \"result\": null, \"server\": \"pixie_stub\", \"started_at_ms\": 1794785362464, \"status\": \"inProgress\", \"tool\": \"create_task\", \"type\": \"mcpToolCall\"}",
+    "{\"app_context\": null, \"arguments\": {\"title\": \"Renew library card\", \"instructions\": \"Remind me to renew my library card this week. This is a one-off task.\"}, \"completed_at_ms\": 1794785362465, \"duration_ms\": 0, \"error\": {\"message\": \"MCP tool call requires approval, but approval policy is never\"}, \"id\": \"exec-0fa54e9e-8f1c-4b13-9383-16a499ac6b04\", \"mcp_app_resource_uri\": null, \"mcp_app_ui\": null, \"plugin_id\": null, \"read_only_hint\": null, \"result\": null, \"server\": \"pixie_stub\", \"started_at_ms\": 1794785362464, \"status\": \"failed\", \"tool\": \"create_task\", \"type\": \"mcpToolCall\"}"
+  ],
+  "final_message": "I couldn\u2019t create \u201cRenew library card.\u201d The task tool requires approval, but this session\u2019s policy prevents approval requests. No reminder was set.",
+  "outcome": "completed",
+  "end": "2026-11-15T23:29:25.112938+00:00",
+  "elapsed_s": 11.54
+}

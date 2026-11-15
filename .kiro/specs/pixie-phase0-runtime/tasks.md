@@ -47,7 +47,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Record how instruction files are discovered (global file in Codex_Home, project-root chain, working directory) and which injection strategy works (`explicit`, `codex_home`, `inline`); confirm a working directory outside any Git repository avoids repository `AGENTS.md` inheritance.
     - Record how model and reasoning effort are set and which values the account accepts, or mark "not verified" with the reason.
     - _Requirements: 1.12, 1.13, 3.2, 3.16, 2.11; Decisions: D2_
-  - [ ] 1.7 Spike natural-language delegation proof
+  - [x] 1.7 Spike natural-language delegation proof
     - Build a throwaway stub (small SQLite file under `spikes/`) exposing `create_task` and `propose_schedule`; prove through at least one executed run that a natural-language chat request invokes the structured operation and returns a persisted identifier present in the stub store.
     - Record whether delegation works through host tools (MCP or dynamic tools, verified against the exact pinned version), structured output, or only slash commands; slash-only is recorded as reduced conversational functionality; undemonstrated is "not verified" with the reason.
     - Operator ruling: the throwaway stub store under `spikes/` is an accepted reading of Requirement 1.14's "present in the Store" wording. The spike proves the mechanism and that the returned identifier is persisted in the stub; persistence in the real Store is covered by the thin end-to-end slice and its tests (6.9, 6.11).
