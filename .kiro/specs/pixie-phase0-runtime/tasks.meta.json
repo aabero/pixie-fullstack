@@ -99,6 +99,25 @@
         "chatSessionId": "sess_80446ab6-8146-4c19-bff8-25bd3844c23a",
         "timestamp": 1794785624263
       }
+    ],
+    "1.8 Write the spike report and capability record": [
+      {
+        "executionId": "967263d1-c029-4161-a9da-8851cb6d811d",
+        "chatSessionId": "sess_c089935e-db03-45d3-aad0-3a3e71e8db79",
+        "timestamp": 1794785782585
+      },
+      {
+        "executionId": "967263d1-c029-4161-a9da-8851cb6d811d",
+        "chatSessionId": "sess_c089935e-db03-45d3-aad0-3a3e71e8db79",
+        "timestamp": 1794785989326
+      }
+    ],
+    "1. Requirement 1 spike (P0-01): validate the Codex integration": [
+      {
+        "executionId": "967263d1-c029-4161-a9da-8851cb6d811d",
+        "chatSessionId": "sess_c089935e-db03-45d3-aad0-3a3e71e8db79",
+        "timestamp": 1794785989412
+      }
     ]
   }
 }

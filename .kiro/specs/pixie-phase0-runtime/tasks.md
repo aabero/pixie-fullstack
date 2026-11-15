@@ -15,7 +15,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
 
 ## Tasks
 
-- [ ] 1. Requirement 1 spike (P0-01): validate the Codex integration
+- [x] 1. Requirement 1 spike (P0-01): validate the Codex integration
   - Gates all dependent work. Spike code lives under `spikes/p0-01/` (throwaway, not application code). Raw outputs are kept. If the spike shows unattended subscription login cannot work, stop and review scope with the Operator before continuing (Introduction, D3).
   - [x] 1.1 Create the spike harness and run one bounded task per candidate interface
     - Create a uv project under `spikes/p0-01/`; record `uv --version` and the Python version uv provides.
@@ -52,7 +52,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Record whether delegation works through host tools (MCP or dynamic tools, verified against the exact pinned version), structured output, or only slash commands; slash-only is recorded as reduced conversational functionality; undemonstrated is "not verified" with the reason.
     - Operator ruling: the throwaway stub store under `spikes/` is an accepted reading of Requirement 1.14's "present in the Store" wording. The spike proves the mechanism and that the returned identifier is persisted in the stub; persistence in the real Store is covered by the thin end-to-end slice and its tests (6.9, 6.11).
     - _Requirements: 1.14, 12.1; Decisions: D2_
-  - [ ] 1.8 Write the spike report and capability record
+  - [x] 1.8 Write the spike report and capability record
     - Write `docs/spike-p0-01-report.md` covering every item in Requirement 1, the selected backend (only this one gets built), the filled capability record (design `AdapterCapabilities` flags), the D2/D3 conclusions, and the D5 lingering observation (does the user service survive logout and start at boot; mark unverified if not testable).
     - List the design degradations that apply (design "Degradation by backend") and any requirements issue found (for example slash-only delegation).
     - _Requirements: 1.1 to 1.14, 9.7, 9.8; Decisions: D2, D3, D5_

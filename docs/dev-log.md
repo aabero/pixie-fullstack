@@ -82,3 +82,14 @@
 - Deviations from the design: none.
 - Tests: no pytest (spike). Executed runs: task -> `task-aeae2a74` and propose_schedule -> `sched-9bd59551`, both read back from SQLite; negative case made no call (weak: prompt said not to set anything up). Run 1 without pre-approval failed, as recorded.
 - Follow-ups: MCP calls need pre-approval or an approval handler; MCP servers run outside the thread sandbox; determinism and a neutral negative case not verified. Dynamic tools and structured output not verified (not needed).
+
+## Task 1.8 - Write the spike report and capability record (2026-11-15)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 1.1 to 1.14, 9.7, 9.8; Decisions D2, D3, D5
+- What changed: added `docs/spike-p0-01-report.md` (18 sections per the spike runbook, each with a status), built only from `spikes/p0-01/NOTES-1.1.md` to `NOTES-1.7.md` and `spikes/p0-01/raw/`.
+- Decisions: backend A (Python SDK `openai-codex` 0.169.0, Python 3.14.4) recorded as selected; `output_schema` and `backend_pid_report` marked not verified (no evidence in notes); D5 logout/boot marked not verified with Operator follow-ups; section 18 left "pending task 2.1".
+- Deviations from the design: none in the work. Report item 17 lists findings that contradict or are missing from requirements/design: 3.16 ancestor AGENTS.md, approval handler model vs async `answer_approval`, read confinement vs `SandboxSpec`, interrupt blocked by a pending approval handler.
+- Tests: not run (documentation task, no new experiments).
+- Follow-ups: Operator runs lingering, logout and reboot checks (D5); Operator reads the Terms of Use on automated use; task 2.1 decides the Python version.
