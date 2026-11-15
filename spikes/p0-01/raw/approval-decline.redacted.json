@@ -1,0 +1,263 @@
+{
+  "interface": "python-sdk (openai-codex) low-level client + approvalHandler",
+  "mode": "decline",
+  "input": "Use a shell command to create a file named approval-probe.txt in the current directory containing the word hello. If the sandbox blocks the write, request approval to run it outside the sandbox. Do not do anything else.",
+  "start": "2026-11-15T22:05:20.068675+00:00",
+  "approval_requests": [
+    {
+      "t_request_s": 7.878,
+      "method": "item/commandExecution/requestApproval",
+      "param_keys": [
+        "availableDecisions",
+        "command",
+        "commandActions",
+        "cwd",
+        "environmentId",
+        "itemId",
+        "kind",
+        "proposedExecpolicyAmendment",
+        "reason",
+        "startedAtMs",
+        "threadId",
+        "turnId"
+      ],
+      "command": "/usr/bin/zsh -lc \"printf 'hello\\\\n' > approval-probe.txt\"",
+      "reason": "Allow creating approval-probe.txt containing hello in the current directory outside the read-only sandbox?",
+      "available_decisions": [
+        "accept",
+        {
+          "acceptWithExecpolicyAmendment": {
+            "execpolicy_amendment": [
+              "/usr/bin/zsh",
+              "-lc",
+              "printf 'hello\\n' > approval-probe.txt"
+            ]
+          }
+        },
+        "cancel"
+      ],
+      "handler_thread": "Thread-2 (_reader_loop)",
+      "answered": "decline"
+    }
+  ],
+  "events": [
+    {
+      "t": 0.008,
+      "method": "turn/started"
+    },
+    {
+      "t": 0.971,
+      "method": "item/started",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 0.972,
+      "method": "item/completed",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 2.88,
+      "method": "item/started",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 2.88,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 2.88,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 2.88,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 2.88,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 2.88,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 2.881,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 2.881,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 2.887,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 2.887,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 3.211,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 3.211,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 3.211,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 3.211,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 3.211,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 3.211,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 3.211,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 3.506,
+      "method": "item/completed",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 3.988,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 4.086,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 6.685,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 6.694,
+      "method": "item/started",
+      "item_type": "commandExecution",
+      "item_status": "CommandExecutionStatus.in_progress"
+    },
+    {
+      "t": 6.695,
+      "method": "item/completed",
+      "item_type": "commandExecution",
+      "item_status": "CommandExecutionStatus.declined"
+    },
+    {
+      "t": 6.697,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 8.377,
+      "method": "item/started",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 8.378,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.378,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.378,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.378,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.378,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.378,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.591,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.591,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.591,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.591,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.722,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.722,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.761,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.761,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.761,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.761,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.761,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 8.837,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 8.839,
+      "method": "item/completed",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 8.848,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 8.852,
+      "method": "turn/completed",
+      "turn_status": "TurnStatus.completed"
+    }
+  ],
+  "turn_wall_s": 8.853,
+  "interrupt_attempt": null,
+  "thread_read_turn_statuses": [
+    "TurnStatus.completed"
+  ],
+  "followup_status": "TurnStatus.completed",
+  "followup_response": "OK",
+  "file_created_in_cwd": false,
+  "outcome": "completed",
+  "end": "2026-11-15T22:05:31.876089+00:00",
+  "elapsed_s": 11.81
+}

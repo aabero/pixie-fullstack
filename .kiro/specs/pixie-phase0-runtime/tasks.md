@@ -34,7 +34,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Record how expired login is detected (the observable signal).
     - Record whether the dedicated Codex_Home can hold a working unattended login.
     - _Requirements: 1.8, 1.9, 2.14, 9.11, 9.12; Decisions: D3, D29_
-  - [ ] 1.4 Spike approval surfacing and failure signals
+  - [x] 1.4 Spike approval surfacing and failure signals
     - Trigger an approval request; record how it surfaces to application code and, with no user connected, the observed worker behavior and elapsed time.
     - Reproduce or simulate expired auth, network failure and usage limit; record the signal for each and whether thread state is preserved; mark anything not reproducible "not verified" with the reason.
     - _Requirements: 1.5, 1.6; Decisions: D2, D3_

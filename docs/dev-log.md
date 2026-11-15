@@ -43,3 +43,13 @@
 - Deviations from the design: none
 - Tests: no pytest run (spike task). Unit run with no tty and minimal PATH completed the bounded task ("PONG"); `codex login status` gives exit 0 / exit 1 for logged in / not logged in; empty home gives 401 on SDK run.
 - Follow-ups: D3 holds for the observed window. Not verified: real token expiry/refresh, default credential-store value (set `file` explicitly), account plan, whether the Terms permit unattended personal use, lingering/boot (D5). No pixie-spike-* units remain. Task 1.4 not started.
+## Task 1.4 - Spike approval surfacing and failure signals (2026-11-15)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 1.5, 1.6; Decisions D2, D3
+- What changed: added `spikes/p0-01/run_approval_probe.py`, `run_failure_probe.py`, `NOTES-1.4.md` and redacted raw outputs `raw/approval-*.redacted.json`, `raw/failure-*.redacted.json` (plus stderr files).
+- Decisions: used the low-level SDK client (`approvalsReviewer=user`, custom approval handler) because the public API only has deny_all/auto_review; simulated network failure with a closed-port `chatgpt_base_url` and a proxy env; simulated usage limit with a loopback fake provider returning 429 (dummy key, real login not sent).
+- Deviations from the design: none
+- Tests: no pytest run (spike task). Findings: approval arrives as server request `item/commandExecution/requestApproval`, worker waits (verified 240 s, no timeout), a blocking handler stalls the SDK reader so `interrupt` hangs, default handler auto-accepts; network failure = `will_retry` errors then turn `failed` (~12.5 s), thread survives; usage limit = typed `usageLimitExceeded`, turn `failed`.
+- Follow-ups: not verified: real token expiry, real usage limit, thread state after auth failure, cross-client resume after a usage-limit failure, approve path, wait beyond 240 s. No pixie-spike-* units remain. Task 1.5 not started.

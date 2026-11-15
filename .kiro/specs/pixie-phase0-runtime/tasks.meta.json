@@ -46,6 +46,23 @@
         "chatSessionId": "sess_70395e5c-7a0c-4900-8d94-992faa1f33a3",
         "timestamp": 1794779220397
       }
+    ],
+    "1.4 Spike approval surfacing and failure signals": [
+      {
+        "executionId": "99f4c568-a6e1-4924-b8c8-33b82aa0fd5a",
+        "chatSessionId": "sess_e301206d-3791-41d9-8313-fc9dbfb0effa",
+        "timestamp": 1794779769908
+      },
+      {
+        "executionId": "99f4c568-a6e1-4924-b8c8-33b82aa0fd5a",
+        "chatSessionId": "sess_e301206d-3791-41d9-8313-fc9dbfb0effa",
+        "timestamp": 1794779772413
+      },
+      {
+        "executionId": "99f4c568-a6e1-4924-b8c8-33b82aa0fd5a",
+        "chatSessionId": "sess_e301206d-3791-41d9-8313-fc9dbfb0effa",
+        "timestamp": 1794781186847
+      }
     ]
   }
 }

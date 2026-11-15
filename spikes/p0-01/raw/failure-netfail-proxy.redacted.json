@@ -1,0 +1,97 @@
+{
+  "interface": "python-sdk (openai-codex)",
+  "mode": "netfail-proxy",
+  "start": "2026-11-15T22:17:04.836981+00:00",
+  "A": {
+    "status": "TurnStatus.completed",
+    "response": "OK"
+  },
+  "B_simulation": "HTTPS_PROXY/HTTP_PROXY/ALL_PROXY env pointing at closed loopback port 1 for the app-server process",
+  "B": {
+    "client_start_ok": true,
+    "thread_resume_ok": true,
+    "events": [
+      {
+        "t": 0.16,
+        "method": "turn/started",
+        "turn_status": "TurnStatus.in_progress"
+      },
+      {
+        "t": 0.22,
+        "method": "item/started"
+      },
+      {
+        "t": 0.22,
+        "method": "item/completed"
+      },
+      {
+        "t": 0.45,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 2/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 0.87,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 3/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 1.73,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 4/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 3.25,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 5/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 6.52,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 1/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 6.74,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 2/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 7.19,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 3/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 8.08,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 4/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 9.61,
+        "method": "error",
+        "payload": "error=TurnError(additional_details='workspace routing discovery failed', codex_error_info=CodexErrorInfo(root=ResponseStreamDisconnectedCodexErrorInfo(response_stream_disconnected=ResponseStreamDisconnected(http_status_code=None))), message='Reconnecting... 5/5', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=True"
+      },
+      {
+        "t": 12.55,
+        "method": "error",
+        "payload": "error=TurnError(additional_details=None, codex_error_info=CodexErrorInfo(root=<CodexErrorInfoValue.other: 'other'>), message='workspace routing discovery failed', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=False"
+      },
+      {
+        "t": 12.56,
+        "method": "turn/completed",
+        "turn_status": "TurnStatus.failed",
+        "turn_error": "additional_details=None codex_error_info=CodexErrorInfo(root=<CodexErrorInfoValue.other: 'other'>) message='workspace routing discovery failed' misalignment=None"
+      }
+    ],
+    "elapsed_s": 12.59
+  },
+  "C": {
+    "turn_statuses_before_followup": [
+      "TurnStatus.completed",
+      "TurnStatus.failed"
+    ],
+    "followup_status": "TurnStatus.completed",
+    "followup_response": "LANTERN"
+  },
+  "outcome": "completed",
+  "end": "2026-11-15T22:17:24.495178+00:00",
+  "elapsed_s": 19.66
+}

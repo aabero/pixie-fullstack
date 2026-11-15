@@ -1,0 +1,62 @@
+{
+  "interface": "python-sdk (openai-codex)",
+  "mode": "usage-provider",
+  "start": "2026-11-15T22:18:37.875182+00:00",
+  "A": {
+    "status": "TurnStatus.completed",
+    "response": "OK"
+  },
+  "B_simulation": "custom model_provider on loopback fake (dummy key) answering HTTP 429 usage_limit_reached on /v1/responses; real login not sent",
+  "B": {
+    "client_start_ok": true,
+    "thread_start_ok": true,
+    "same_client_thread_read_statuses": [
+      "TurnStatus.failed"
+    ],
+    "same_client_thread_still_readable": true,
+    "events": [
+      {
+        "t": 0.14,
+        "method": "turn/started",
+        "turn_status": "TurnStatus.in_progress"
+      },
+      {
+        "t": 0.58,
+        "method": "item/started"
+      },
+      {
+        "t": 0.58,
+        "method": "item/completed"
+      },
+      {
+        "t": 0.59,
+        "method": "error",
+        "payload": "error=TurnError(additional_details=None, codex_error_info=CodexErrorInfo(root=<CodexErrorInfoValue.usage_limit_exceeded: 'usageLimitExceeded'>), message='You\u2019ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again later.', misalignment=None) thread_id='<uuid>' turn_id='<uuid>' will_retry=False"
+      },
+      {
+        "t": 0.6,
+        "method": "turn/completed",
+        "turn_status": "TurnStatus.failed",
+        "turn_error": "additional_details=None codex_error_info=CodexErrorInfo(root=<CodexErrorInfoValue.usage_limit_exceeded: 'usageLimitExceeded'>) message='You\u2019ve hit your usage limit. Upgrade to Pro (https://chatgpt.com/explore/pro), visit https://chatgpt.com/settings/usage to purchase more credits or try again later.' misalignment=None"
+      }
+    ],
+    "elapsed_s": 0.63,
+    "fake_server_hits": [
+      {
+        "method": "POST",
+        "path": "/v1/responses"
+      }
+    ]
+  },
+  "C_failed_thread_resume_error": "JSON-RPC error -32600: This chat uses model provider \u201cpixiefake\u201d, which is no longer configured. Restore this provider\u2019s configuration to continue.",
+  "C": {
+    "turn_statuses_before_followup": [
+      "TurnStatus.completed"
+    ],
+    "followup_status": "TurnStatus.completed",
+    "followup_response": "LANTERN"
+  },
+  "outcome": "completed",
+  "end": "2026-11-15T22:18:46.310178+00:00",
+  "elapsed_s": 8.43
+}
