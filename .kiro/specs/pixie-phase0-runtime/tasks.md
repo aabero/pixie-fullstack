@@ -28,7 +28,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Record mechanism and observed result for: starting execution, streaming events, retaining thread references, retrieving results.
     - Interrupt an active run; verify it stops within 10 s; record final state and whether the thread reference remains usable.
     - _Requirements: 1.3, 1.4; Decisions: D2_
-  - [ ] 1.3 Spike unattended ChatGPT-subscription login from a user service
+  - [x] 1.3 Spike unattended ChatGPT-subscription login from a user service
     - Create a dedicated `CODEX_HOME`, log in with the subscription (no API key), file-based credential store; run from a `systemd-run --user` unit with no terminal and no nvm-sourced PATH (absolute Codex path, `node` directory on a minimal PATH).
     - Record: subscription vs API billing, account eligibility, usage limits (units, period, shared with interactive use), terms for automated use, billing implications.
     - Record how expired login is detected (the observable signal).

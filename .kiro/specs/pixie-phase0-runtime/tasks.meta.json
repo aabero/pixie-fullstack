@@ -34,6 +34,18 @@
         "chatSessionId": "sess_96fbeb5e-3b34-44e9-b4fa-a4d31236e118",
         "timestamp": 1794778873567
       }
+    ],
+    "1.3 Spike unattended ChatGPT-subscription login from a user service": [
+      {
+        "executionId": "468c746d-3c4b-49fd-a537-0d6f23d774f8",
+        "chatSessionId": "sess_70395e5c-7a0c-4900-8d94-992faa1f33a3",
+        "timestamp": 1794778986761
+      },
+      {
+        "executionId": "468c746d-3c4b-49fd-a537-0d6f23d774f8",
+        "chatSessionId": "sess_70395e5c-7a0c-4900-8d94-992faa1f33a3",
+        "timestamp": 1794779220397
+      }
     ]
   }
 }

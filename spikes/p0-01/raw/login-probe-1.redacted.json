@@ -1,0 +1,70 @@
+{
+  "env": {
+    "stdin_isatty": true,
+    "stdout_isatty": false,
+    "stderr_isatty": false,
+    "PATH": "/home/agustin/.nvm/versions/node/v26.13.0/bin:/usr/local/bin:/usr/bin:/bin",
+    "TERM_set": true,
+    "SSH_AUTH_SOCK_set": true,
+    "DISPLAY_set": true,
+    "BROWSER_set": false,
+    "api_key_env_vars_present": [],
+    "CODEX_HOME_is_dedicated": true,
+    "nvm_in_PATH": false,
+    "config_toml_exists": false,
+    "auth_json_exists": true,
+    "auth_json_size": 4084
+  },
+  "status_dedicated": {
+    "start": "2026-11-15T21:44:50.646881+00:00",
+    "end": "2026-11-15T21:44:50.678237+00:00",
+    "exit": 0,
+    "stdout": "",
+    "stderr": "Logged in using ChatGPT\n"
+  },
+  "status_empty_home": {
+    "start": "2026-11-15T21:44:50.678918+00:00",
+    "end": "2026-11-15T21:44:50.687335+00:00",
+    "exit": 1,
+    "stdout": "",
+    "stderr": "WARNING: proceeding, even though we could not create PATH aliases: Refusing to create helper binaries under temporary dir \"/tmp\" (codex_home: AbsolutePathBuf(\"/tmp/pixie-spike-empty-home-nh22s0px\"))\nNot logged in\n"
+  },
+  "sdk_dedicated": {
+    "start": "2026-11-15T21:44:50.687396+00:00",
+    "outcome": "completed",
+    "result": "PONG",
+    "end": "2026-11-15T21:44:54.212807+00:00"
+  },
+  "sdk_empty_home": {
+    "start": "2026-11-15T21:44:54.212843+00:00",
+    "outcome": "error:RuntimeError",
+    "result": "unexpected status 401 Unauthorized: Missing bearer or basic authentication in header, url: https://api.openai.com/v1/responses, cf-ray: <id>, request id: <id>",
+    "end": "2026-11-15T21:45:09.894234+00:00"
+  },
+  "empty_home_files_after": [
+    ".sandbox_migration",
+    ".tmp",
+    "goals_1.sqlite",
+    "goals_1.sqlite-shm",
+    "goals_1.sqlite-wal",
+    "installation_id",
+    "logs_2.sqlite",
+    "logs_2.sqlite-shm",
+    "logs_2.sqlite-wal",
+    "memories_1.sqlite",
+    "memories_1.sqlite-shm",
+    "memories_1.sqlite-wal",
+    "queue_1.sqlite",
+    "queue_1.sqlite-shm",
+    "queue_1.sqlite-wal",
+    "sessions",
+    "shell_snapshots",
+    "skills",
+    "state_5.sqlite",
+    "state_5.sqlite-shm",
+    "state_5.sqlite-wal",
+    "thread-writer-locks",
+    "thread_history_1.sqlite"
+  ],
+  "auth_json_exists_in_empty_after": false
+}

@@ -32,3 +32,14 @@
 - Deviations from the design: none
 - Tests: no pytest run (spike task). Streaming, thread ids, TurnResult and thread_resume worked; interrupt stopped in 0.006 s, final state `interrupted`, thread usable in the same and a new client.
 - Follow-ups: interrupt during tool execution or approval wait, and app-server crash recovery, not verified. No pixie-spike-* units remain. Task 1.3 not started.
+
+## Task 1.3 - Spike unattended ChatGPT-subscription login from a user service (2026-11-15)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 1.8, 1.9, 2.14, 9.11, 9.12; Decisions D3, D29
+- What changed: added `spikes/p0-01/run_login_probe.py`, `spikes/p0-01/NOTES-1.3.md`, `spikes/p0-01/raw/login-probe-1.redacted.json`, `login-probe-1.stderr.txt`, `login-probe-2.redacted.json`, `login-probe-2.stderr.txt`.
+- Decisions: used the existing Operator login (no new login); simulated "not logged in" with an empty temp CODEX_HOME; second run without `--pipe` because `--pipe` forwarded a tty. Runs: pixie-spike-login-1 21:44:50Z-21:45:10Z, pixie-spike-login-2 21:45:20Z-21:45:39Z.
+- Deviations from the design: none
+- Tests: no pytest run (spike task). Unit run with no tty and minimal PATH completed the bounded task ("PONG"); `codex login status` gives exit 0 / exit 1 for logged in / not logged in; empty home gives 401 on SDK run.
+- Follow-ups: D3 holds for the observed window. Not verified: real token expiry/refresh, default credential-store value (set `file` explicitly), account plan, whether the Terms permit unattended personal use, lingering/boot (D5). No pixie-spike-* units remain. Task 1.4 not started.
