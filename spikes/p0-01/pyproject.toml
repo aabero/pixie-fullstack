@@ -1,0 +1,7 @@
+[project]
+name = "pixie-spike-p0-01"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "openai-codex>=0.169.0",
+]

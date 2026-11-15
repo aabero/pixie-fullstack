@@ -1,0 +1,9 @@
+{
+  "interface": "python-sdk (openai-codex)",
+  "input": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+  "start": "2026-11-15T21:29:42.970731+00:00",
+  "outcome": "completed",
+  "result": "PONG",
+  "end": "2026-11-15T21:29:47.537404+00:00",
+  "elapsed_s": 4.57
+}

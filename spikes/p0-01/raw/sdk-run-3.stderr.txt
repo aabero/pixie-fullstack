@@ -1,0 +1,6 @@
+Running as unit: pixie-spike-sdk-3.service; invocation ID: 3844726ab28b40cf921720fd19d32324
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 4.818s
+             CPU time consumed: 2.088s
+                   Memory peak: 180.6M (swap: 0B)

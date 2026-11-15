@@ -1,0 +1,15 @@
+Running as unit: pixie-spike-sdk-1.service; invocation ID: c9aa893111674bea90d725cd8271a7ed
+{
+  "interface": "python-sdk (openai-codex)",
+  "input": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+  "start": "2026-11-15T21:22:59.130390+00:00",
+  "outcome": "error:TransportClosedError",
+  "result": "Codex process closed stdout. stderr_tail=WARNING: proceeding, even though we could not create PATH aliases: CODEX_HOME points to \"/home/agustin/dev/pixie/pixie-fullstack/spikes/p0-01/.codex-home\", but that path does not exist\nError: CODEX_HOME points to \"/home/agustin/dev/pixie/pixie-fullstack/spikes/p0-01/.codex-home\", but that path does not exist",
+  "end": "2026-11-15T21:22:59.722809+00:00",
+  "elapsed_s": 0.59
+}
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 831ms
+             CPU time consumed: 827ms
+                   Memory peak: 51.8M (swap: 0B)

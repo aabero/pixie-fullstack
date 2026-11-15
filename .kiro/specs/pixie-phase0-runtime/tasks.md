@@ -17,7 +17,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
 
 - [ ] 1. Requirement 1 spike (P0-01): validate the Codex integration
   - Gates all dependent work. Spike code lives under `spikes/p0-01/` (throwaway, not application code). Raw outputs are kept. If the spike shows unattended subscription login cannot work, stop and review scope with the Operator before continuing (Introduction, D3).
-  - [ ] 1.1 Create the spike harness and run one bounded task per candidate interface
+  - [x] 1.1 Create the spike harness and run one bounded task per candidate interface
     - Create a uv project under `spikes/p0-01/`; record `uv --version` and the Python version uv provides.
     - Try the Python SDK first, then app-server JSON-RPC, then `codex exec`; stop at the first that satisfies the needs, but record why earlier ones were rejected.
     - Run one bounded task from a transient `systemd-run --user` unit, finishing within 300 s; record outcome, input, final result, start and end timestamps.
