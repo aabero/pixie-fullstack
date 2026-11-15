@@ -1,0 +1,158 @@
+{
+  "interface": "python-sdk (openai-codex) low-level client",
+  "mode": "mitig",
+  "start": "2026-11-15T23:20:13.221406+00:00",
+  "cases": [
+    {
+      "name": "nogit-parent-has-agents/markers-empty",
+      "start": "2026-11-15T23:20:13.914789+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/nogit/work",
+        "config": {
+          "project_root_markers": []
+        }
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/nogit/work",
+      "reply": "NONE",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 4.23,
+      "end": "2026-11-15T23:20:18.143775+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": []
+    },
+    {
+      "name": "nogit-own+parent/markers-empty",
+      "start": "2026-11-15T23:20:18.143938+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/nogit/work2",
+        "config": {
+          "project_root_markers": []
+        }
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [
+        "<tmp>/nogit/work2/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/nogit/work2",
+      "reply": "PXMARK-NOGITOWN-2a81",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 3.59,
+      "end": "2026-11-15T23:20:21.734228+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": [
+        "PXMARK-NOGITOWN-2a81"
+      ]
+    },
+    {
+      "name": "git-pkg/markers-empty",
+      "start": "2026-11-15T23:20:21.734270+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/gitrepo/pkg",
+        "config": {
+          "project_root_markers": []
+        }
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [
+        "<tmp>/gitrepo/pkg/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/gitrepo/pkg",
+      "reply": "PXMARK-PKGMID-2a81",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 4.34,
+      "end": "2026-11-15T23:20:26.076005+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": [
+        "PXMARK-PKGMID-2a81"
+      ]
+    },
+    {
+      "name": "nogit-parent-has-agents/doc-max-bytes-0",
+      "start": "2026-11-15T23:20:26.076109+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/nogit/work",
+        "config": {
+          "project_doc_max_bytes": 0
+        }
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/nogit/work",
+      "reply": "NONE",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 4.75,
+      "end": "2026-11-15T23:20:30.824473+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": []
+    },
+    {
+      "name": "nogit-own+parent/doc-max-bytes-0",
+      "start": "2026-11-15T23:20:30.824516+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/nogit/work2",
+        "config": {
+          "project_doc_max_bytes": 0
+        }
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/nogit/work2",
+      "reply": "NONE",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 2.8,
+      "end": "2026-11-15T23:20:33.626767+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": []
+    },
+    {
+      "name": "git-pkg/doc-max-bytes-0",
+      "start": "2026-11-15T23:20:33.626815+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/gitrepo/pkg",
+        "config": {
+          "project_doc_max_bytes": 0
+        }
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/gitrepo/pkg",
+      "reply": "NONE",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 3.09,
+      "end": "2026-11-15T23:20:36.715374+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": []
+    }
+  ],
+  "marker_suffix_note": "each marker is PXMARK-<NAME>-<run suffix>; suffix=2a81",
+  "all_markers": {
+    "REPOROOT": "PXMARK-REPOROOT-2a81",
+    "PKGMID": "PXMARK-PKGMID-2a81",
+    "NOGITPARENT": "PXMARK-NOGITPARENT-2a81",
+    "NOGITOWN": "PXMARK-NOGITOWN-2a81"
+  },
+  "outcome": "completed",
+  "end": "2026-11-15T23:20:36.747062+00:00",
+  "elapsed_s": 23.53,
+  "tmp_removed": true
+}

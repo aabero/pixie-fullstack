@@ -43,7 +43,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Record whether reads can be confined to listed directories and whether the Codex_Home can be excluded from reads.
     - Run an out-of-bounds write attempt under a prompt demanding it; confirm it is blocked and that the sandbox is not silently doing nothing.
     - _Requirements: 1.11, 2.13, 8.12, 8.13, 8.16; Decisions: D2, D29, D30_
-  - [ ] 1.6 Spike instruction discovery and model/effort selection
+  - [x] 1.6 Spike instruction discovery and model/effort selection
     - Record how instruction files are discovered (global file in Codex_Home, project-root chain, working directory) and which injection strategy works (`explicit`, `codex_home`, `inline`); confirm a working directory outside any Git repository avoids repository `AGENTS.md` inheritance.
     - Record how model and reasoning effort are set and which values the account accepts, or mark "not verified" with the reason.
     - _Requirements: 1.12, 1.13, 3.2, 3.16, 2.11; Decisions: D2_

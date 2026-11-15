@@ -62,3 +62,12 @@
 - Deviations from the design: none
 - Tests: no pytest run (spike task). read-only and workspace-write (writable roots) enforced by bwrap, blocked writes are command failures (turn still `completed`); legacy modes do not confine reads; a named permission profile does (unlisted dirs invisible, explicit `deny` gives Permission denied); `:workspace` keeps /tmp writable; sandbox failure is fail-closed per command with no start-up signal.
 - Follow-ups: not verified: real Codex_Home as deny target, deny globs, apply_patch/file-change enforcement, network enforcement, real-host causes of sandbox failure (AppArmor etc.), paths a real task needs under a confined profile. Model refuses on seen policy, so only neutral-script results count as enforcement. No pixie-spike-* units remain. Task 1.6 not started.
+## Task 1.6 - Spike instruction discovery and model/effort selection (2026-11-15)
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 1.12, 1.13, 3.2, 3.16, 2.11; Decision D2
+- What changed: added `spikes/p0-01/run_instruction_probe.py`, `run_instruction_unit.sh`, `NOTES-1.6.md` and redacted `raw/instr-*.redacted.json` (plus empty stderr files).
+- Decisions: used `thread_start.instructionSources` plus canary markers in temp dirs as evidence; tested the Codex_Home route with a credential-less throwaway CODEX_HOME (removed afterwards), so model visibility of the global file is not verified.
+- Deviations from the design: none. Finding that contradicts the task's expectation: outside a Git repo, ancestor AGENTS.md files are still loaded. Config `project_root_markers=[]` (cwd file only) or `project_doc_max_bytes=0` (none) switched it off in the canary runs. This repo has no root AGENTS.md, so that case used a canary parent. Needs a note in report item 17 (Requirement 3.16).
+- Tests: no pytest run (spike task). explicit (developerInstructions/baseInstructions) and inline work; codex_home discovery works, delivery not verified; model/effort set via thread/turn params or config keys, invalid values fail the turn (modelNotFound, 400 unsupported_value), not at start.
+- Follow-ups: not verified: global file reaching the model, global file vs `project_doc_max_bytes=0`, walk-up beyond the temp parent, turn-level effort echo, each model/effort pair. No pixie-spike-* units remain. Task 1.7 not started.

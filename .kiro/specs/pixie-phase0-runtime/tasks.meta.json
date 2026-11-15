@@ -75,6 +75,18 @@
         "chatSessionId": "sess_00c28bd8-bcec-43bf-8c57-dcb28bbf88e3",
         "timestamp": 1794783065605
       }
+    ],
+    "1.6 Spike instruction discovery and model/effort selection": [
+      {
+        "executionId": "6717d576-b69b-4232-8413-a34d04d4ad03",
+        "chatSessionId": "sess_aa201dea-ebc7-4e47-929d-ef5d2523e5f0",
+        "timestamp": 1794784540794
+      },
+      {
+        "executionId": "6717d576-b69b-4232-8413-a34d04d4ad03",
+        "chatSessionId": "sess_aa201dea-ebc7-4e47-929d-ef5d2523e5f0",
+        "timestamp": 1794785042947
+      }
     ]
   }
 }

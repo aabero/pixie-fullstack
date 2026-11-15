@@ -1,0 +1,287 @@
+{
+  "interface": "python-sdk (openai-codex) low-level client",
+  "mode": "model",
+  "start": "2026-11-15T23:22:45.305291+00:00",
+  "cases": [
+    {
+      "name": "default-nothing-set",
+      "start": "2026-11-15T23:22:46.015196+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work"
+      },
+      "prompt": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "reply": "PONG",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 2.92,
+      "end": "2026-11-15T23:22:48.931205+00:00"
+    },
+    {
+      "name": "thread-model+turn-effort:low",
+      "start": "2026-11-15T23:22:48.931239+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work",
+        "model": "gpt-6.1-sol"
+      },
+      "prompt": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "reply": "PONG",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 2.74,
+      "end": "2026-11-15T23:22:51.672225+00:00"
+    },
+    {
+      "name": "config-keys-model+model_reasoning_effort:ultra",
+      "start": "2026-11-15T23:22:51.672264+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work",
+        "config": {
+          "model": "gpt-6.1-sol",
+          "model_reasoning_effort": "ultra"
+        }
+      },
+      "prompt": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": "ultra",
+      "resp_cwd": "<tmp>/clean/work",
+      "reply": "PONG",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 2.67,
+      "end": "2026-11-15T23:22:54.344037+00:00"
+    },
+    {
+      "name": "turn-effort-valid-enum-unsupported-by-model:none",
+      "start": "2026-11-15T23:22:54.344123+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work",
+        "model": "gpt-6.1-sol"
+      },
+      "prompt": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "turn_status": "TurnStatus.failed",
+      "turn_error": "additional_details=None codex_error_info=CodexErrorInfo(root=<CodexErrorInfoValue.other: 'other'>) message='{\"type\":\"error\",\"error\":{\"message\":\"Unsupported value: \\'none\\' is not supported with the \\'gpt-6.1-sol\\' model. Supported values are: \\'low\\', \\'medium\\', \\'high\\', \\'xhigh\\', and \\'max\\'.\",\"type\":\"invalid_request_error\",\"param\":\"input[7].reasoning.effort\",\"code\":\"unsupported_value\"},\"status\":400}' misalignment=None",
+      "outcome": "ok",
+      "elapsed_s": 1.46,
+      "end": "2026-11-15T23:22:55.808329+00:00"
+    },
+    {
+      "name": "invalid-model-at-turn",
+      "start": "2026-11-15T23:22:55.808357+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work"
+      },
+      "prompt": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "turn_status": "TurnStatus.failed",
+      "turn_error": "additional_details=None codex_error_info=CodexErrorInfo(root=<CodexErrorInfoValue.model_not_found: 'modelNotFound'>) message=\"The 'pixie-no-such-model-0000' model is not supported when using Codex with a ChatGPT account.\" misalignment=None",
+      "outcome": "ok",
+      "elapsed_s": 1.11,
+      "end": "2026-11-15T23:22:56.922548+00:00"
+    },
+    {
+      "name": "invalid-effort-at-turn",
+      "start": "2026-11-15T23:22:56.922577+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work"
+      },
+      "prompt": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "turn_status": "TurnStatus.failed",
+      "turn_error": "additional_details=None codex_error_info=CodexErrorInfo(root=<CodexErrorInfoValue.other: 'other'>) message='{\"type\":\"error\",\"error\":{\"message\":\"Invalid response.create payload: Invalid value: \\'bogus-effort\\'. Supported values are: \\'none\\', \\'minimal\\', \\'low\\', \\'medium\\', \\'high\\', \\'xhigh\\', and \\'max\\'.\",\"type\":\"invalid_request_error\",\"param\":null,\"code\":null},\"status\":400}' misalignment=None",
+      "outcome": "ok",
+      "elapsed_s": 1.24,
+      "end": "2026-11-15T23:22:58.161914+00:00"
+    },
+    {
+      "name": "invalid-model-at-thread_start",
+      "start": "2026-11-15T23:22:58.161944+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work",
+        "model": "pixie-no-such-model-0000"
+      },
+      "prompt": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+      "instructionSources": [],
+      "resp_model": "pixie-no-such-model-0000",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "turn_status": "TurnStatus.failed",
+      "turn_error": "additional_details=None codex_error_info=CodexErrorInfo(root=<CodexErrorInfoValue.model_not_found: 'modelNotFound'>) message=\"The 'pixie-no-such-model-0000' model is not supported when using Codex with a ChatGPT account.\" misalignment=None",
+      "outcome": "ok",
+      "elapsed_s": 1.43,
+      "end": "2026-11-15T23:22:59.588383+00:00"
+    }
+  ],
+  "marker_suffix_note": "each marker is PXMARK-<NAME>-<run suffix>; suffix=3f39",
+  "model_list": [
+    {
+      "id": "gpt-6.1-sol",
+      "model": "gpt-6.1-sol",
+      "hidden": false,
+      "isDefault": true,
+      "defaultReasoningEffort": "low",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ]
+    },
+    {
+      "id": "gpt-6-astra",
+      "model": "gpt-6-astra",
+      "hidden": false,
+      "isDefault": false,
+      "defaultReasoningEffort": "low",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ]
+    },
+    {
+      "id": "gpt-6.1-terra",
+      "model": "gpt-6.1-terra",
+      "hidden": false,
+      "isDefault": false,
+      "defaultReasoningEffort": "low",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ]
+    },
+    {
+      "id": "gpt-6-sol",
+      "model": "gpt-6-sol",
+      "hidden": false,
+      "isDefault": false,
+      "defaultReasoningEffort": "medium",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ]
+    },
+    {
+      "id": "gpt-reserve",
+      "model": "gpt-reserve",
+      "hidden": true,
+      "isDefault": false,
+      "defaultReasoningEffort": "medium",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "gpt-6-luna",
+      "model": "gpt-6-luna",
+      "hidden": false,
+      "isDefault": false,
+      "defaultReasoningEffort": "medium",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "model": "gpt-5.6-sol",
+      "hidden": false,
+      "isDefault": false,
+      "defaultReasoningEffort": "low",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ]
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "model": "gpt-5.6-terra",
+      "hidden": false,
+      "isDefault": false,
+      "defaultReasoningEffort": "medium",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max",
+        "ultra"
+      ]
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "model": "gpt-5.6-luna",
+      "hidden": false,
+      "isDefault": false,
+      "defaultReasoningEffort": "medium",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    {
+      "id": "codex-auto-review",
+      "model": "codex-auto-review",
+      "hidden": true,
+      "isDefault": false,
+      "defaultReasoningEffort": "medium",
+      "supportedReasoningEfforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    }
+  ],
+  "model_list_next_cursor": null,
+  "outcome": "completed",
+  "end": "2026-11-15T23:22:59.620458+00:00",
+  "elapsed_s": 14.31,
+  "tmp_removed": true
+}

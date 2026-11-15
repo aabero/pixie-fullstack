@@ -1,0 +1,73 @@
+{
+  "interface": "python-sdk (openai-codex) low-level client",
+  "mode": "home",
+  "start": "2026-11-15T23:21:32.437142+00:00",
+  "cases": [
+    {
+      "name": "codex_home-global-AGENTS-thread_start-only",
+      "start": "2026-11-15T23:21:33.152475+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work"
+      },
+      "prompt": "None",
+      "instructionSources": [
+        "<CODEX_HOME>/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "outcome": "ok",
+      "elapsed_s": 0.01,
+      "end": "2026-11-15T23:21:33.160801+00:00"
+    },
+    {
+      "name": "codex_home-global-AGENTS-with-turn",
+      "start": "2026-11-15T23:21:33.160821+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work"
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [
+        "<CODEX_HOME>/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "turn_status": "TurnStatus.failed",
+      "turn_error": "additional_details=None codex_error_info=CodexErrorInfo(root=HttpConnectionFailedCodexErrorInfo(http_connection_failed=HttpConnectionFailed(http_status_code=401))) message='unexpected status 401 Unauthorized: Missing bearer or basic authentication in header, url: https://api.openai.com/v1/responses, cf-ray: <id>, request id: req_<id>' misalignment=None",
+      "outcome": "ok",
+      "elapsed_s": 14.47,
+      "end": "2026-11-15T23:21:47.627021+00:00",
+      "markers_expected": [
+        "(global marker from wrapper)"
+      ],
+      "markers_found_in_reply": []
+    }
+  ],
+  "marker_suffix_note": "each marker is PXMARK-<NAME>-<run suffix>; suffix=b9ac",
+  "throwaway_codex_home_files": [
+    ".tmp",
+    "AGENTS.md",
+    "goals_1.sqlite",
+    "goals_1.sqlite-shm",
+    "goals_1.sqlite-wal",
+    "installation_id",
+    "logs_2.sqlite",
+    "logs_2.sqlite-shm",
+    "logs_2.sqlite-wal",
+    "memories_1.sqlite",
+    "memories_1.sqlite-shm",
+    "memories_1.sqlite-wal",
+    "queue_1.sqlite",
+    "queue_1.sqlite-shm",
+    "queue_1.sqlite-wal",
+    "skills",
+    "state_5.sqlite",
+    "state_5.sqlite-shm",
+    "state_5.sqlite-wal"
+  ],
+  "outcome": "completed",
+  "end": "2026-11-15T23:21:47.643004+00:00",
+  "elapsed_s": 15.21,
+  "tmp_removed": true
+}

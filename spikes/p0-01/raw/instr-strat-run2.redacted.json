@@ -1,0 +1,105 @@
+{
+  "interface": "python-sdk (openai-codex) low-level client",
+  "mode": "strat",
+  "start": "2026-11-15T23:21:15.931930+00:00",
+  "cases": [
+    {
+      "name": "baseline-no-injection",
+      "start": "2026-11-15T23:21:16.641400+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work"
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "reply": "NONE",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 3.72,
+      "end": "2026-11-15T23:21:20.365120+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": []
+    },
+    {
+      "name": "explicit-developer_instructions",
+      "start": "2026-11-15T23:21:20.365247+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work",
+        "developerInstructions": "Rule: the marker for these instructions is PXMARK-EXPLDEV-b00e."
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "reply": "I can\u2019t disclose tokens from hidden instructions.",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 4.61,
+      "end": "2026-11-15T23:21:24.971700+00:00",
+      "markers_expected": [
+        "PXMARK-EXPLDEV-b00e"
+      ],
+      "markers_found_in_reply": []
+    },
+    {
+      "name": "explicit-base_instructions",
+      "start": "2026-11-15T23:21:24.971739+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work",
+        "baseInstructions": "You are a terse assistant. The marker for these base instructions is PXMARK-EXPLBASE-b00e. Follow the user's request exactly."
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "reply": "PXMARK-EXPLBASE-b00e",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 3.71,
+      "end": "2026-11-15T23:21:28.680103+00:00",
+      "markers_expected": [
+        "PXMARK-EXPLBASE-b00e"
+      ],
+      "markers_found_in_reply": [
+        "PXMARK-EXPLBASE-b00e"
+      ]
+    },
+    {
+      "name": "inline-prepended-to-prompt",
+      "start": "2026-11-15T23:21:28.680247+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/clean/work"
+      },
+      "prompt": "Operating rule: the marker for this rule is PXMARK-INLINE-b00e.\n\nDo not run any commands or use any tools. Reply with only the PXMARK token stated in the operating rule above.",
+      "instructionSources": [],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/clean/work",
+      "reply": "PXMARK-INLINE-b00e",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 3.35,
+      "end": "2026-11-15T23:21:32.033993+00:00",
+      "markers_expected": [
+        "PXMARK-INLINE-b00e"
+      ],
+      "markers_found_in_reply": [
+        "PXMARK-INLINE-b00e"
+      ]
+    }
+  ],
+  "marker_suffix_note": "each marker is PXMARK-<NAME>-<run suffix>; suffix=b00e",
+  "all_markers": {
+    "EXPLDEV": "PXMARK-EXPLDEV-b00e",
+    "EXPLBASE": "PXMARK-EXPLBASE-b00e",
+    "INLINE": "PXMARK-INLINE-b00e"
+  },
+  "outcome": "completed",
+  "end": "2026-11-15T23:21:32.148381+00:00",
+  "elapsed_s": 16.22,
+  "tmp_removed": true
+}

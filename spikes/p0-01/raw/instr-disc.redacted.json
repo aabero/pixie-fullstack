@@ -1,0 +1,155 @@
+{
+  "interface": "python-sdk (openai-codex) low-level client",
+  "mode": "disc",
+  "start": "2026-11-15T23:19:25.851650+00:00",
+  "cases": [
+    {
+      "name": "git-cwd-at-repo-root",
+      "start": "2026-11-15T23:19:26.544747+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/gitrepo"
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [
+        "<tmp>/gitrepo/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/gitrepo",
+      "reply": "PXMARK-REPOROOT-5b8c",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 4.81,
+      "end": "2026-11-15T23:19:31.358964+00:00",
+      "markers_expected": [
+        "PXMARK-REPOROOT-5b8c"
+      ],
+      "markers_found_in_reply": [
+        "PXMARK-REPOROOT-5b8c"
+      ]
+    },
+    {
+      "name": "git-cwd-pkg-deep",
+      "start": "2026-11-15T23:19:31.359107+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/gitrepo/pkg/deep"
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [
+        "<tmp>/gitrepo/AGENTS.md",
+        "<tmp>/gitrepo/pkg/AGENTS.md",
+        "<tmp>/gitrepo/pkg/deep/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/gitrepo/pkg/deep",
+      "reply": "PXMARK-REPOROOT-5b8c, PXMARK-PKGMID-5b8c, PXMARK-DEEPCWD-5b8c",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 3.77,
+      "end": "2026-11-15T23:19:35.129570+00:00",
+      "markers_expected": [
+        "PXMARK-DEEPCWD-5b8c",
+        "PXMARK-PKGMID-5b8c",
+        "PXMARK-REPOROOT-5b8c"
+      ],
+      "markers_found_in_reply": [
+        "PXMARK-DEEPCWD-5b8c",
+        "PXMARK-PKGMID-5b8c",
+        "PXMARK-REPOROOT-5b8c"
+      ]
+    },
+    {
+      "name": "nogit-cwd-no-agents-parent-has",
+      "start": "2026-11-15T23:19:35.129614+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/nogit/work"
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [
+        "<tmp>/nogit/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/nogit/work",
+      "reply": "PXMARK-NOGITPARENT-5b8c",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 4.71,
+      "end": "2026-11-15T23:19:39.838794+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": [
+        "PXMARK-NOGITPARENT-5b8c"
+      ]
+    },
+    {
+      "name": "nogit-cwd-own-agents-parent-has",
+      "start": "2026-11-15T23:19:39.838856+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/nogit/work2"
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [
+        "<tmp>/nogit/AGENTS.md",
+        "<tmp>/nogit/work2/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/nogit/work2",
+      "reply": "PXMARK-NOGITPARENT-5b8c, PXMARK-NOGITOWN-5b8c",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 6.42,
+      "end": "2026-11-15T23:19:46.258180+00:00",
+      "markers_expected": [
+        "PXMARK-NOGITOWN-5b8c"
+      ],
+      "markers_found_in_reply": [
+        "PXMARK-NOGITOWN-5b8c",
+        "PXMARK-NOGITPARENT-5b8c"
+      ]
+    },
+    {
+      "name": "nogit-cwd-sub-two-levels",
+      "start": "2026-11-15T23:19:46.258232+00:00",
+      "thread_params": {
+        "cwd": "<tmp>/nogit/work2/sub/empty"
+      },
+      "prompt": "Do not run any commands or use any tools. Look at every instruction and context message you were given before this message. List each token of the exact form PXMARK-<WORD>-<4 hex digits> that appears in them, ignoring this message itself. Reply with only the tokens, comma-separated, or NONE.",
+      "instructionSources": [
+        "<tmp>/nogit/AGENTS.md",
+        "<tmp>/nogit/work2/AGENTS.md",
+        "<tmp>/nogit/work2/sub/AGENTS.md"
+      ],
+      "resp_model": "gpt-6.1-sol",
+      "resp_reasoningEffort": null,
+      "resp_cwd": "<tmp>/nogit/work2/sub/empty",
+      "reply": "PXMARK-NOGITPARENT-5b8c, PXMARK-NOGITOWN-5b8c, PXMARK-NOGITSUBDIR-5b8c",
+      "turn_status": "TurnStatus.completed",
+      "outcome": "ok",
+      "elapsed_s": 3.89,
+      "end": "2026-11-15T23:19:50.145152+00:00",
+      "markers_expected": [],
+      "markers_found_in_reply": [
+        "PXMARK-NOGITOWN-5b8c",
+        "PXMARK-NOGITPARENT-5b8c",
+        "PXMARK-NOGITSUBDIR-5b8c"
+      ]
+    }
+  ],
+  "marker_suffix_note": "each marker is PXMARK-<NAME>-<run suffix>; suffix=5b8c",
+  "git_above_nogit": "no (rev-parse fails)",
+  "all_markers": {
+    "REPOROOT": "PXMARK-REPOROOT-5b8c",
+    "PKGMID": "PXMARK-PKGMID-5b8c",
+    "DEEPCWD": "PXMARK-DEEPCWD-5b8c",
+    "SIBLING": "PXMARK-SIBLING-5b8c",
+    "NOGITPARENT": "PXMARK-NOGITPARENT-5b8c",
+    "NOGITOWN": "PXMARK-NOGITOWN-5b8c",
+    "NOGITSUBDIR": "PXMARK-NOGITSUBDIR-5b8c"
+  },
+  "outcome": "completed",
+  "end": "2026-11-15T23:19:50.176894+00:00",
+  "elapsed_s": 24.33,
+  "tmp_removed": true
+}
