@@ -22,6 +22,18 @@
         "chatSessionId": "sess_82cb11a5-7fbb-4bb7-9f91-1a62158ea995",
         "timestamp": 1794778243462
       }
+    ],
+    "1.2 Spike streaming, thread references, results and interruption": [
+      {
+        "executionId": "9ed7f726-07d2-4e31-b20c-36e36598060f",
+        "chatSessionId": "sess_96fbeb5e-3b34-44e9-b4fa-a4d31236e118",
+        "timestamp": 1794778731214
+      },
+      {
+        "executionId": "9ed7f726-07d2-4e31-b20c-36e36598060f",
+        "chatSessionId": "sess_96fbeb5e-3b34-44e9-b4fa-a4d31236e118",
+        "timestamp": 1794778873567
+      }
     ]
   }
 }

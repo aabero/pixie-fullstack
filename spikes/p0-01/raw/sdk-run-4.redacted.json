@@ -1,0 +1,132 @@
+{
+  "interface": "python-sdk (openai-codex)",
+  "start": "2026-11-15T21:40:21.539218+00:00",
+  "scenarios": {
+    "A_stream_result_thread": {
+      "input": "Reply with exactly the word PONG. Do not run any commands or use any tools.",
+      "thread_id_present": true,
+      "thread_id_len": 36,
+      "turn_id_present": true,
+      "event_count": 10,
+      "event_methods": {
+        "turn/started": 1,
+        "item/started": 2,
+        "item/completed": 2,
+        "item/agentMessage/delta": 2,
+        "turn/moderationMetadata": 1,
+        "thread/tokenUsage/updated": 1,
+        "turn/completed": 1
+      },
+      "first_events": [
+        {
+          "t": 0.006,
+          "method": "turn/started",
+          "payload_type": "TurnStartedNotification"
+        },
+        {
+          "t": 0.936,
+          "method": "item/started",
+          "payload_type": "ItemStartedNotification"
+        },
+        {
+          "t": 0.937,
+          "method": "item/completed",
+          "payload_type": "ItemCompletedNotification"
+        },
+        {
+          "t": 2.628,
+          "method": "item/started",
+          "payload_type": "ItemStartedNotification"
+        },
+        {
+          "t": 2.628,
+          "method": "item/agentMessage/delta",
+          "payload_type": "AgentMessageDeltaNotification"
+        },
+        {
+          "t": 2.628,
+          "method": "item/agentMessage/delta",
+          "payload_type": "AgentMessageDeltaNotification"
+        },
+        {
+          "t": 2.691,
+          "method": "turn/moderationMetadata",
+          "payload_type": "TurnModerationMetadataNotification"
+        },
+        {
+          "t": 2.693,
+          "method": "item/completed",
+          "payload_type": "ItemCompletedNotification"
+        },
+        {
+          "t": 2.704,
+          "method": "thread/tokenUsage/updated",
+          "payload_type": "ThreadTokenUsageUpdatedNotification"
+        },
+        {
+          "t": 2.707,
+          "method": "turn/completed",
+          "payload_type": "TurnCompletedNotification"
+        }
+      ],
+      "last_event": {
+        "t": 2.707,
+        "method": "turn/completed",
+        "payload_type": "TurnCompletedNotification"
+      },
+      "streamed_text": "PONG",
+      "thread_read_type": "ThreadReadResponse",
+      "thread_read_turns": 1,
+      "thread_read_last_turn_status": "TurnStatus.completed",
+      "followup_input": "What single word did I ask you to reply with earlier? Answer with just that word. Do not use tools.",
+      "followup_status": "TurnStatus.completed",
+      "followup_final_response": "PONG",
+      "followup_usage_present": true,
+      "followup_items": 2
+    },
+    "B_interrupt": {
+      "input": "Write a very long numbered list from 1 to 400, one short sentence per item about different animals. Do not run any commands or use any tools.",
+      "thread_id_len": 36,
+      "interrupt_response_type": "TurnInterruptResponse",
+      "interrupt_call_returned_after_s": 0.006,
+      "deltas_before_interrupt": 7,
+      "interrupt_requested_at_s": 2.55,
+      "time_to_stop_s": 0.006,
+      "turn_completed_status": "TurnStatus.interrupted",
+      "events_after_interrupt": 3,
+      "last_events": [
+        {
+          "t": 2.55,
+          "method": "item/agentMessage/delta"
+        },
+        {
+          "t": 2.556,
+          "method": "item/agentMessage/delta"
+        },
+        {
+          "t": 2.556,
+          "method": "item/agentMessage/delta"
+        },
+        {
+          "t": 2.556,
+          "method": "turn/completed"
+        }
+      ],
+      "same_client_followup_status": "TurnStatus.completed",
+      "same_client_followup_response": "OK",
+      "thread_read_turn_statuses": [
+        "TurnStatus.interrupted",
+        "TurnStatus.completed"
+      ]
+    },
+    "C_resume_new_client": {
+      "resume_interrupted_thread_status": "TurnStatus.completed",
+      "resume_interrupted_thread_response": "OK",
+      "resume_completed_thread_status": "TurnStatus.completed",
+      "resume_completed_thread_response": "PONG"
+    }
+  },
+  "outcome": "completed",
+  "end": "2026-11-15T21:40:38.023409+00:00",
+  "elapsed_s": 16.48
+}

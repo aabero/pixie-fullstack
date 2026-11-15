@@ -1,0 +1,6 @@
+Running as unit: pixie-spike-sdk-4.service
+          Finished with result: success
+Main processes terminated with: code=exited, status=0/SUCCESS
+               Service runtime: 16.747s
+             CPU time consumed: 4.517s
+                   Memory peak: 123.5M (swap: 0B)

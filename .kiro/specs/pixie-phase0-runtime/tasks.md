@@ -24,7 +24,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Record the exact full version and the pinning method (`uv.lock` or pinned `uv pip` requirement), and the Python versions supported including whether 3.14.4 works.
     - Note: any Python version or `requires-python` set in the spike project is throwaway; the application value follows the result recorded by task 2.1.
     - _Requirements: 1.1, 1.2, 1.7, 1.10; Decisions: D2, D31_
-  - [ ] 1.2 Spike streaming, thread references, results and interruption
+  - [x] 1.2 Spike streaming, thread references, results and interruption
     - Record mechanism and observed result for: starting execution, streaming events, retaining thread references, retrieving results.
     - Interrupt an active run; verify it stops within 10 s; record final state and whether the thread reference remains usable.
     - _Requirements: 1.3, 1.4; Decisions: D2_
