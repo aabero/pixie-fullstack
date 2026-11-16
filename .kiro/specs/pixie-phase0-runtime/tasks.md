@@ -62,6 +62,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Using `uv python list` and a throwaway `uv venv --python 3.14.4`, confirm availability on the Operator's machine.
     - Operator ruling: assume Python 3.14.4. If uv cannot provide it, the stated outcome is to default to Python 3.12; record the chosen version ("3.14.4" or "3.12") and the reason in `docs/spike-p0-01-report.md` and in the verification notes (task 19.6).
     - The version recorded here is authoritative: `requires-python` and the interpreter pin (4.1), the unit file (17.1), setup (17.2) and the documentation (19.2, 19.4) must use whichever version this task records.
+    - Outcome (recorded): 3.14.4 is available through the system `/usr/bin/python3.14`; uv can only download 3.14.10. The 3.12 fallback was not triggered. The Operator accepted `requires-python = ">=3.14.4,<3.15"` with `.python-version` 3.14.4 (see 4.1).
     - _Requirements: 1.10, 16.13, 20.5; Decisions: D31_
   - [x] 2.2 V-1: verify cronsim on Python 3.14.4
     - In a throwaway uv environment, install and check timezone-aware evaluation for `America/Montevideo` and a DST zone (for example `America/New_York`), spring-forward gap (fires once at first valid instant after the gap), fall-back overlap (fires once, first occurrence), strictly-after-reference results.
@@ -73,8 +74,16 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - If it fails or is flaky, select the fallback (plain `input()` in a worker thread, updates printed from the event loop) and run the same checks (a) and (b) against it; record the result. If neither meets 2 s, record it as a requirements issue for 11.9 and 11.11.
     - _Requirements: 11.9, 11.11_
 
-- [ ] 3. Checkpoint - spike gate
+- [x] 3. Checkpoint - spike gate
   - Confirm the spike report exists and names the selected backend. If D3 failed (no unattended login) stop and ask the user to review scope before continuing. Ensure all tests pass, ask the user if questions arise.
+  - [ ] 3.1 Spike non-blocking approvals
+    - **Gates tasks 5.2, 8.1, 10.2 and 10.3** (also affects 10.1). Do not implement them until this task is done. If the answer changes the adapter interface, task 5.2 changes.
+    - Goal: find out whether a pending approval and a working `interrupt` can coexist, and whether the approval wait can be held while the Attempt stays in the execution slot (Requirement 8.15, D25).
+    - Run from `pixie-spike-*` transient units under `spikes/p0-01/` (use the spike runbook) and test: (a) whether the SDK offers an async client or any way to answer an approval without blocking the reader thread (for example a handler delegating to another thread, or an async API); (b) a direct app-server JSON-RPC client where the Runtime owns the read loop; (c) the `accept` decision path, which was never exercised, and whether the command then actually runs; (d) whether `CodexClient(config, approval_handler=...)` works without the private attributes the earlier spike used; (e) interrupt while an approval is pending, with a time bound of 10 s.
+    - Record observations in `spikes/p0-01/NOTES-3.1.md` and append an addendum to sections 5 and 17b-2 of `docs/spike-p0-01-report.md` (append only; keep existing text).
+    - Outcome rule: if a pending approval and a working interrupt can coexist, the design holds; record the mechanism. If they cannot, STOP and ask the Operator to choose between changing Requirement 8.15/D25 or adopting a deny-and-resume model. Do not continue to task 4 until the Operator decides.
+    - Stop transient units and clean up when finished; redact any account details from saved output.
+    - _Requirements: 1.4, 1.5, 8.3, 8.4, 8.15; Decisions: D2, D25_
 
 - [ ] 4. Project foundation, configuration and Store
   - [ ] 4.1 Create the project skeleton
@@ -82,6 +91,8 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Add `.gitignore` entries excluding an in-repo Runtime_Home (`.pixie-dev/`) and keep audio, transcription and visualizer dependencies out of the manifest.
     - Dependencies are added with exact pins via uv.
     - `requires-python` (and any interpreter pin) follows the version recorded by task 2.1 (3.14.4, or 3.12 if uv cannot provide 3.14.4).
+    - Operator decision (Python pin): `requires-python = ">=3.14.4,<3.15"` with `.python-version` 3.14.4. Task 2.1 recorded 3.14.4 (system `/usr/bin/python3.14`; uv can only download 3.14.10); the 3.12 fallback was not triggered.
+    - Replace the `requires-python >=3.12` text above with `>=3.14.4,<3.15`. Add a check (script or documented command, recorded in the dev log) of how uv chooses between the system `python3.14` and a downloaded interpreter, so the project environment does not silently use a different interpreter than the one the spike validated (3.14.4).
     - _Requirements: 15.4, 16.13, 19.1, 20.6; Decisions: D31_
   - [ ] 4.2 Implement configuration and paths
     - Implement `config.py` and `paths.py`: Runtime_Home resolution (`PIXIE_HOME`, default `~/.pixie`), TOML load with unknown-key and range rejection naming the key, single authoritative Vault path entry, model and reasoning effort unset by default with no hardcoded model, secrets file loader, and `config/pixie.example.toml` with placeholders and commented model keys.
@@ -123,6 +134,8 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - `adapter/base.py`: `CodexAdapter` protocol, `AdapterCapabilities`, `ExecutionRequest`, `SandboxSpec`, `BackendRefs`, Application_Event kinds; `adapter/mapper.py`: table-driven total mapping (supported, `unmapped` with raw type, `parse_failure` with payload truncated to 10,000 characters), ordered per-attempt delivery within 1 s.
     - Callers reference no Codex or Claude type; `on_refs` persistence failure ends the attempt with no further submissions.
     - The capability flags are those named in the spike report (**SPIKE-DEPENDENT**, D2; unknown flags default to false so the system fails closed).
+    - Operator decision (17b-2 and 17b-10, OPEN): approvals and the interrupt bound depend on the outcome of task 3.1 (non-blocking approvals spike) and must not be implemented until 3.1 is done. If 3.1 changes the adapter interface (for example how an approval is answered), this task changes.
+    - Operator decision (17b-3): add `read_roots` to `SandboxSpec`; confinement uses named permission profiles; the Codex binary directory is listed as readable.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
   - [ ] 5.3 Implement the fake adapter
     - `adapter/fake.py`: scripted events, blockable approvals, ignorable cancellation, configurable liveness, all capability flags settable, injectable `on_refs` failure.
@@ -149,6 +162,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 6.4 Implement prompt assembly and instruction isolation
     - `prompts.py`: read Agent_Instructions fresh per execution (unreadable gives `instructions_unavailable` failure and notice), provide them under the injection strategy from the capability record, first-prompt ordering, working directory under the Runtime_Home never inside a Git work tree, the repository, or the Project_Directory.
     - **SPIKE-DEPENDENT** (D2): injection strategy is `explicit`, `codex_home` or `inline` as recorded by the spike; degrades in that order.
+    - Operator decision (17b-1): set `project_doc_max_bytes=0` in the thread config and use `explicit` injection (developerInstructions). Never rely on the working directory alone to avoid `AGENTS.md` inheritance.
     - _Requirements: 3.2, 3.3, 3.9, 3.16, 1.12_
   - [ ] 6.5 Implement the Worker with leases and result persistence
     - `worker.py`, `leases.py`: claim in one transaction (instance id, 60 s lease, model/effort recorded), heartbeat every 15 s only while the adapter reports the execution alive, one Attempt at a time, event persistence through the redactor, thread/turn mapping write-ahead, Result persisted before the terminal transition (separate transaction recording `persistence_error` if the Result fails).
@@ -164,6 +178,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 6.8 Implement the Chat_Client
     - `chat.py`: connect within 5 s (else error, no Conversation, non-zero exit), display the Conversation id before the first message, resume offer, streamed output, immediate Task update entries, unread-result count on reconnect, status and approval answers within 2 s while a Task runs.
     - Rendering uses prompt_toolkit or the threaded `input()` fallback, whichever V-2 (task 2.3) selected.
+    - Operator decision (V-2): prompt_toolkit 3.0.53 is selected (pty-based result only). The Operator checks it in a real terminal using `spikes/v2-prompt-toolkit/NOTES.md`; this does not block any task.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.7, 11.9, 11.10, 11.11, 11.12_
   - [ ] 6.9 Wire and verify the end-to-end slice with the fake adapter
     - Integration test: start the Runtime, chat `/task`, receive confirmation with identifier, close the client, the Worker executes, reconnect, see the unread Result, ask about it in chat; assert the Task survived the disconnect and appears in both chat and `pixie tasks show`.
@@ -200,14 +215,25 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 8.1 Implement the selected Codex adapter
     - **SPIKE-DEPENDENT (D2):** implement only the interface selected by the spike (SDK, else app-server JSON-RPC client for the used subset, else `codex exec`) in `adapter/<selected>.py`: submit, observe, request_cancel, get_result, thread resume, raw-event mapping table, dedicated `CODEX_HOME`, absolute executable path, no reading of Codex credential files, no write of credentials to the repository.
     - Degradation: SDK failing falls to app-server, then to `exec`; `exec` loses backend approvals and possibly host tools (design "Degradation by backend"); nothing above the adapter changes.
+    - Operator decision (17b-2 and 17b-10, OPEN): approvals and the interrupt bound depend on the outcome of task 3.1 (non-blocking approvals spike) and must not be implemented until 3.1 is done.
+    - Operator decision (17b-1): set `project_doc_max_bytes=0` in the thread config plus `explicit` injection (developerInstructions); never rely on the working directory alone.
+    - Operator decision (17b-3): use named permission profiles for confinement, take `read_roots` from `SandboxSpec`, and list the Codex binary directory as readable.
+    - Operator decision (17b-4): use explicit `workspace_write` config with `exclude_slash_tmp` and `exclude_tmpdir_env_var` both true.
+    - Operator decision (17b-12): set `cli_auth_credentials_store="file"` explicitly.
+    - OPEN (17b-11): whether to report the backend pid and whether to use `output_schema` is not decided by the Operator. Do not treat either as decided.
     - _Requirements: 2.1, 2.2, 2.5, 2.8, 2.14, 9.11; Decisions: D2_
   - [ ] 8.2 Implement authentication check, liveness, inactivity confirmation and model validation
     - **SPIKE-DEPENDENT (D2, D3):** `check_auth` within 30 s with a failure report free of credentials, `is_alive`, `confirm_inactive` (pid plus start time from `/proc`), `force_stop`, `list_models`, mapping of auth, usage-limit and network signals recorded by the spike, approval request and answer routing.
     - Degradation: without `auth_probe` expiry is detected on failure only; without `approval_requests` approvals exist only for Runtime-mediated operations and out-of-bounds operations are recorded as `sandbox_denied` (8.18); without `unattended_login` stop for scope review.
+    - Operator decision (17b-5): sandbox failure has no start-up signal, so run a canary at worker start and via `pixie doctor --probe` (see 10.6).
+    - Operator decision (17b-7): map `codex login status` exit 1 to `missing` and a 401 to `unknown`. Testing real token expiry is deferred.
+    - Operator decision (17b-9): validate model and reasoning effort against `list_models` before submit.
     - _Requirements: 2.9, 2.11, 5.7, 5.8, 7.4, 8.18, 1.6, 1.9; Decisions: D2, D3_
   - [ ] 8.3 Implement the host-tool bridge for chat delegation
     - **SPIKE-DEPENDENT (D2):** `hosttools.py` and `toolbridge.py` exposing `create_task`, `propose_schedule` (registered in task 14.3), `list_tasks`, `get_task`, `get_result` with per-turn tokens, executed by Runtime code, wired into the conversation lane.
     - Degradation: use schema-constrained structured output validated by the Runtime if `host_tools` is absent; if neither works, only slash commands and the Task_CLI create work and this is recorded as reduced conversational functionality for the Operator to review (requirements 12.5 and 12.6, 19.5).
+    - Operator decision (17b-6): set `default_tools_approval_mode="approve"` on the MCP server config; strictly validate every tool argument; treat MCP tools as trusted code outside the thread sandbox; keep the tool set per thread. The worker-start canary (8.2, 10.6) includes one delegation call so a version change that breaks the key is detected.
+    - OPEN (17b-11): whether to use `output_schema` is not decided by the Operator. Do not treat it as decided.
     - _Requirements: 12.1, 12.5, 12.6, 3.9; Decisions: D2_
   - [ ] 8.4 Add bounded real Codex smoke tests
     - `tests/smoke/`, excluded from the default run, 120 s cap each, timeout counts as failure: bounded task from a transient user unit, streaming and thread retention, interrupt within 10 s, instruction isolation canary, delegation via the selected route, auth/usage-limit failure where safely inducible, same slice scenario as 6.9 against the real adapter.
@@ -220,15 +246,20 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 10.1 Implement the Permission Planner
     - `permissions.py`: profile to `SandboxSpec` per the design table, realpath canonicalization with containment checks, fail-closed `blocked`/`permission_unenforceable` when the needed capability is absent, `read_confinement_unavailable` warning event, Codex_Home exclusion where supported (else `codex_home_exposure: yes` for status), 10 MB / 100 file quota audit after each Attempt and on file-change events (`limit_exceeded`), `git status` tripwire (`policy_violation`), chat-created Tasks limited to `projects.allowed_roots`.
     - **SPIKE-DEPENDENT (D2, D30):** capability flags decide which profiles can run; unconfined reads run with a warning, writes stay fail-closed.
+    - Operator decision (17b-2 and 17b-10, OPEN): the approval and interrupt design (SandboxSpec approval fields) depend on the outcome of task 3.1 (non-blocking approvals spike) and must not be implemented until 3.1 is done.
+    - Operator decision (17b-3): populate `SandboxSpec.read_roots`, use named permission profiles for confinement, and list the Codex binary directory as readable.
+    - Operator decision (17b-4): use explicit `workspace_write` config with `exclude_slash_tmp` and `exclude_tmpdir_env_var` both true.
     - _Requirements: 2.13, 8.1, 8.2, 8.10, 8.11, 8.12, 8.13, 8.16, 8.17; Decisions: D16, D29, D30_
   - [ ] 10.2 Implement the Approval Service and timeout accounting
     - `approvals.py`: canonical operation hash, one Approval per operation within 2 s with `awaiting_approval` in one transaction, preauthorization matching, consumption of grants, answering through one transaction for both clients (`ALREADY_RESOLVED`), resume within 5 s, denial to `failed`/`approval_denied`, no expiry without a client, single slot held during `awaiting_approval` with the stall shown in status and chat.
     - Attempt timeout stopwatch paused during `awaiting_approval`, continuation budget preserved, heartbeats continue.
     - `pixie approvals approve|deny` and chat `/approve /deny`.
     - **SPIKE-DEPENDENT (D2):** degrades to Runtime-mediated Approvals only (Vault edits, retry review) when the backend does not surface approvals.
+    - Operator decision (17b-2 and 17b-10, OPEN): approvals and the interrupt bound depend on the outcome of task 3.1 (non-blocking approvals spike) and must not be implemented until 3.1 is done.
     - _Requirements: 7.3, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 8.15, 8.18, 13.2, 13.7; Decisions: D16, D25_
   - [ ] 10.3 Implement cancellation
     - Cancellation request rows within 1 s, immediate `cancelled` for `queued`/`blocked`, pending request with unchanged State for active Attempts, withdrawn Approvals, adapter cancel, acknowledgment mapping to `cancelled`/`succeeded`/`failed` after recording work done, 30 s unacknowledged handling (State and request kept, shown pending), terminal rejection; `pixie tasks cancel` and chat `/cancel`.
+    - Operator decision (17b-2 and 17b-10, OPEN): approvals and the interrupt bound depend on the outcome of task 3.1 (non-blocking approvals spike) and must not be implemented until 3.1 is done.
     - _Requirements: 5.3, 5.4, 5.5, 5.6, 5.10, 5.11, 10.7, 13.2, 13.7_
   - [ ] 10.4 Implement failure handling, retry safety and resume
     - Authentication gives `blocked` plus the `auth_required` worker gate (queued Tasks wait), usage limit gives `blocked` with limit and reset time, network failure retried with 2 to 60 s backoff up to max retries then `failed` (but `blocked` with a `retry_review` Approval when a possible external action was recorded; Operator ruling: the design and Property 33 win over the literal text of 5.9, consistent with 7.6), timeout gives `failed`/`timeout`, invalid model gives `blocked`/`configuration`; single `retry_safety` decision in `recovery.py`; `retry_review` Approval and its grant/deny exits; `pixie tasks resume` and chat equivalent.
@@ -239,6 +270,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 10.6 Add the sandbox canary smoke test
     - Smoke test (and the probe routine reused by `pixie doctor --probe`) that tries an out-of-bounds write under a prompt demanding it for both profiles; the write must be blocked, and a silently disabled sandbox must be detected.
     - **SPIKE-DEPENDENT (D2):** if a profile cannot be enforced the test asserts the fail-closed refusal instead.
+    - Operator decision (17b-5): the canary runs at worker start and through `pixie doctor --probe`. The worker-start canary also makes one delegation call (17b-6) to detect a version change that breaks `default_tools_approval_mode`.
     - _Requirements: 8.14, 8.12, 8.13, 19.2_
   - [ ]* 10.7 Write property test for permission planning fails closed
     - **Property 13: Permission planning fails closed**
@@ -304,6 +336,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 14.1 Implement the cron wrapper
     - `cron.py`: `next_after` and `between` behind the library chosen in V-1 (cronsim if it passed, otherwise the replacement), IANA zone handling, DST gap fires once after the gap, overlap fires once at the first occurrence, strictly-after results, default zone America/Montevideo.
     - Depends on task 2.2 (V-1); if cronsim failed, swap the library behind the wrapper only.
+    - Operator decision (cron): skip a fire whose local wall time repeats one already fired in the fall-back overlap. Consequence: an hourly wildcard expression fires 24 times on a 25-hour day. cronsim 2.8 passed V-1 (9 of 9), so it is kept.
     - _Requirements: 6.1, 6.2, 6.3; Decisions: D14_
   - [ ] 14.2 Implement the Scheduler tick and missed-run policy
     - `scheduler.py`: three Schedule types, per-second tick, due Occurrence enqueue in one transaction with the (schedule, due time) primary key within 5 s, `skip` default and uncapped `catch_up` at startup in due order, creation only from Operator-created Schedules, persistence-failure rejection, execution with no client.
@@ -316,6 +349,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - _Requirements: 12.5, 12.6, 13.1, 13.2, 6.16_
   - [ ]* 14.5 Write property test for cron next-due invariants
     - **Property 6: Cron next-due invariants across time zones**
+    - Operator decision (cron): Property 6 is "a repeated local time fires exactly once". The test must cover wildcard-hour expressions across the America/New_York 2026-11-01 overlap and assert that an hourly wildcard fires 24 times on that 25-hour day.
     - **Validates: Requirements 6.1, 6.2**
   - [ ]* 14.6 Write property test for occurrence idempotency
     - **Property 5: Occurrence idempotency**
@@ -351,15 +385,19 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 17.1 Create the systemd unit template and renderer
     - The interpreter version used follows the version recorded by task 2.1.
     - `systemd/pixie-runtime.service.in`: `Type=notify`, absolute interpreter in the uv-managed environment, absolute Codex path, minimal `PATH` with the `node` directory, 30 s start and stop timeouts, `Restart=on-failure`, growing delay with `RestartSteps`/`RestartMaxDelaySec` when `systemctl --version` supports them else fixed `RestartSec`, start limit 5 in 300 s, `KillMode=control-group`; never invokes uv or a shell startup file.
+    - Operator decision (Python pin): `requires-python = ">=3.14.4,<3.15"` with `.python-version` 3.14.4. Task 2.1 recorded 3.14.4 (system `/usr/bin/python3.14`; uv can only download 3.14.10); the 3.12 fallback was not triggered.
+    - Operator decision (D5): logout and boot survival checks are deferred until the real unit exists (this task). The Operator runs them. Do not enable lingering (`loginctl enable-linger`) without the Operator's agreement.
     - _Requirements: 9.1, 9.2, 9.4, 9.5, 9.10, 9.11, 9.12, 9.13, 9.14; Decisions: D32_
   - [ ] 17.2 Implement the Setup_Script
     - `scripts/setup.sh`, `scripts/prereqs.py`, `setup.py`: check `uv` first (stop with install instructions, never auto-install), prerequisites named before any change, stop the running service (abort untouched if it cannot stop), `uv sync --locked --no-dev` into `<home>/venv`, create-only Runtime_Home, Codex_Home mode 0700/0600 with tightening reported, Agent_Instructions install (existing `AGENTS.md` left byte-for-byte, template beside it), deterministic Vault creation from the adapted templates with no interview and no Obsidian access, unit install and `daemon-reload`, ask before enabling lingering and before first enable, `install-manifest.json`, restart only per the Operator's choices with a report, versioned config migration shown and backed up first.
     - The Python version installed by uv follows the version recorded by task 2.1.
     - **SPIKE-DEPENDENT (D3, D5):** Codex login steps follow the spike; if lingering is declined or unavailable setup documents the reduced lifecycle.
+    - Operator decision (Python pin): `requires-python = ">=3.14.4,<3.15"` with `.python-version` 3.14.4. Task 2.1 recorded 3.14.4 (system `/usr/bin/python3.14`; uv can only download 3.14.10); the 3.12 fallback was not triggered. Setup records the interpreter version it finds. Add a check that uv does not silently pick a different interpreter than the validated 3.14.4 (system python3.14 vs download); a different 3.14.x patch version gives a warning, not a stop.
     - _Requirements: 2.12, 3.1, 3.6, 3.12, 9.1, 9.7, 9.8, 16.1, 16.2, 16.3, 16.4, 16.5, 16.8, 16.9, 16.13, 16.14; Decisions: D5, D17, D31, D34_
   - [ ] 17.3 Implement the Doctor_Script
     - `doctor.py`: five checks (service, Store version, configuration, Codex authentication with `codex/` modes and exposure, Vault path), each pass/fail/skipped with a reason within 30 s, skipped "Runtime not running" never a pass, running Doctor is a read-only status client of the socket and never opens the Store, exit non-zero only on a failed check, informational lines (model/effort, lingering, `notify-send`, systemd version and restart mechanism, interpreter exists, read confinement), `--probe` canary only while the Runtime is stopped; no Obsidian check.
     - **SPIKE-DEPENDENT (D2, D3):** the authentication check and exposure line use the recorded probe and capability flags.
+    - Operator decision (Python pin): the Doctor reports the interpreter version; a different 3.14.x patch version gives a warning, not a stop.
     - _Requirements: 2.13, 8.14, 13.9, 16.6, 16.7, 16.10, 9.14; Decisions: D33_
   - [ ] 17.4 Implement update and the version manifest
     - `components.toml` (remote, Reviewed_Revision, pinned revision, license hash for this repository and the Vault_Template_Repo), `update.py` with the ordered steps of 17.3 (stop, backup config and Store with integrity check, fetch from configured remotes only and show per-component commit lists and changed-file counts, explicit yes/no, apply pinned revisions `--ff-only`, `uv sync --locked`, migrate if needed, Doctor while stopped, restart, Doctor again), decline changes nothing, failure names component and reason and points to manual recovery, LICENSE and attribution preserved, uv-missing stops before any change.
@@ -389,6 +427,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 19.2 Rewrite README, TROUBLESHOOTING and CONTRIBUTING
     - State the Python version recorded by task 2.1.
     - Describe Pixie Phase 0, Codex and the Ubuntu service lifecycle; no Claude Code prerequisite or setup path; keep upstream attribution and Jared Rhodenizer's copyright.
+    - Operator decision (Python pin): state `>=3.14.4,<3.15` and 3.14.4.
     - _Requirements: 18.2, 18.4, 18.6_
   - [ ] 19.3 Record licensing, reviewed revisions and upstream remote
     - Add `docs/licensing.md` (AGPL-3.0-or-later runtime, CC BY-SA templates, not legal advice, qualified review advised), `docs/reviewed-revisions.md` (`5bb159f`, `659bba9`), add the `upstream` remote `jaredrhod/fullstack-agent` (never fetched automatically), keep the plan at `docs/always-on-agent-prototype-plan.md`, keep LICENSE byte-identical; no commit unless the Operator asks.
@@ -396,6 +435,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 19.4 Write the operations runbook
     - Use the Python version recorded by task 2.1 in all commands and paths.
     - `docs/operations.md`: exact start/stop/restart/status/log commands with expected results, restart-delay mechanism in use with delay values and observed systemd version, lingering and suspend caveats, update and manual recovery procedure, end-to-end scenario as ordered steps with command and expected result.
+    - Operator decision (Python pin): use 3.14.4 in commands and paths; note the system `/usr/bin/python3.14` versus uv download distinction.
     - _Requirements: 9.6, 9.8, 9.9, 9.14, 17.3, 17.6, 19.4_
   - [ ]* 19.5 Write static and repository checks
     - Example tests: no audio modules or dependencies, no hardcoded model identifier, no reading of Codex credential files, clients import only `client.py`, no tracked credential values, `.gitignore` covers an in-repo Runtime_Home, no Obsidian paths, no legacy-backend references outside `legacy/` and attribution, launchers never control the Runtime, LICENSE identical to the git blob, legacy originals identical to history.
@@ -403,6 +443,10 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
   - [ ] 19.6 Create the verification procedure and record
     - Record the Python version from task 2.1 (including the 3.12 fallback and its reason if it applied).
     - `docs/verification.md`: manual systemd procedure (start, stop, restart, failure backoff, logout, reboot, notification with and without a graphical session, socket permissions) with action, expected outcome and pass/fail/unverified field; an automated end-to-end scenario test (project-state summary, `read-only`, Runtime-written result file) reported as four separate items (executes after client close, delivers or retains, survives service restart, appears in chat and CLI history); spike-dependent and unmet-environment items recorded "unverified" with reasons, never counted as passed; failing items recorded with the overall outcome failed.
+    - Python: 3.14.4 was recorded by task 2.1 and the 3.12 fallback was not triggered. State the accepted pin `>=3.14.4,<3.15`.
+    - Unverified until the Operator reads the Terms of Use (17b-8): unattended personal use of the ChatGPT subscription. Operator action, no code task.
+    - Unverified until the Operator checks (D5): service survival after logout and start at boot, run by the Operator after 17.1 exists. Lingering is not enabled without the Operator's agreement.
+    - Unverified until the Operator checks (V-2): prompt_toolkit 3.0.53 in a real terminal, using `spikes/v2-prompt-toolkit/NOTES.md` (pty-based result only so far).
     - _Requirements: 19.1, 19.3, 19.5, 19.6, 19.7, 19.9, 9.7, 9.8; Decisions: D5, D6, D27_
 
 - [ ] 20. Final checkpoint - Ensure all tests pass
@@ -427,27 +471,28 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     { "id": 1, "tasks": ["1.2", "1.3", "1.4", "1.5", "1.6", "2.1"] },
     { "id": 2, "tasks": ["1.7", "2.2", "2.3"] },
     { "id": 3, "tasks": ["1.8"] },
-    { "id": 4, "tasks": ["4.1"] },
-    { "id": 5, "tasks": ["4.2", "4.3", "5.1"] },
-    { "id": 6, "tasks": ["4.4", "4.5", "5.2", "5.5"] },
-    { "id": 7, "tasks": ["4.6", "4.7", "4.8", "4.9", "5.3", "5.4", "6.1", "6.4"] },
-    { "id": 8, "tasks": ["6.2", "6.3"] },
-    { "id": 9, "tasks": ["6.5", "6.6", "6.7", "6.10"] },
-    { "id": 10, "tasks": ["4.10", "6.8", "6.11", "6.12", "6.13", "6.14", "6.15", "6.17"] },
-    { "id": 11, "tasks": ["6.9", "6.16"] },
-    { "id": 12, "tasks": ["8.1", "10.1"] },
-    { "id": 13, "tasks": ["8.2", "8.3", "10.2", "10.7", "10.8"] },
-    { "id": 14, "tasks": ["8.4", "10.3", "10.6", "10.9", "10.11"] },
-    { "id": 15, "tasks": ["10.4", "10.12"] },
-    { "id": 16, "tasks": ["10.5"] },
-    { "id": 17, "tasks": ["10.10", "10.13", "10.14", "12.1", "12.2", "12.4", "14.1", "16.1", "17.1"] },
-    { "id": 18, "tasks": ["12.3", "12.5", "12.6", "12.8", "14.2", "14.5", "16.2", "16.4", "17.2", "17.3"] },
-    { "id": 19, "tasks": ["12.7", "14.3", "14.6", "14.7", "16.3", "17.4", "17.6", "17.7"] },
-    { "id": 20, "tasks": ["14.4", "14.8", "14.9", "17.8"] },
-    { "id": 21, "tasks": ["17.5"] },
-    { "id": 22, "tasks": ["19.1", "19.2", "19.3", "19.4"] },
-    { "id": 23, "tasks": ["19.5"] },
-    { "id": 24, "tasks": ["19.6"] }
+    { "id": 4, "tasks": ["3.1"] },
+    { "id": 5, "tasks": ["4.1"] },
+    { "id": 6, "tasks": ["4.2", "4.3", "5.1"] },
+    { "id": 7, "tasks": ["4.4", "4.5", "5.2", "5.5"] },
+    { "id": 8, "tasks": ["4.6", "4.7", "4.8", "4.9", "5.3", "5.4", "6.1", "6.4"] },
+    { "id": 9, "tasks": ["6.2", "6.3"] },
+    { "id": 10, "tasks": ["6.5", "6.6", "6.7", "6.10"] },
+    { "id": 11, "tasks": ["4.10", "6.8", "6.11", "6.12", "6.13", "6.14", "6.15", "6.17"] },
+    { "id": 12, "tasks": ["6.9", "6.16"] },
+    { "id": 13, "tasks": ["8.1", "10.1"] },
+    { "id": 14, "tasks": ["8.2", "8.3", "10.2", "10.7", "10.8"] },
+    { "id": 15, "tasks": ["8.4", "10.3", "10.6", "10.9", "10.11"] },
+    { "id": 16, "tasks": ["10.4", "10.12"] },
+    { "id": 17, "tasks": ["10.5"] },
+    { "id": 18, "tasks": ["10.10", "10.13", "10.14", "12.1", "12.2", "12.4", "14.1", "16.1", "17.1"] },
+    { "id": 19, "tasks": ["12.3", "12.5", "12.6", "12.8", "14.2", "14.5", "16.2", "16.4", "17.2", "17.3"] },
+    { "id": 20, "tasks": ["12.7", "14.3", "14.6", "14.7", "16.3", "17.4", "17.6", "17.7"] },
+    { "id": 21, "tasks": ["14.4", "14.8", "14.9", "17.8"] },
+    { "id": 22, "tasks": ["17.5"] },
+    { "id": 23, "tasks": ["19.1", "19.2", "19.3", "19.4"] },
+    { "id": 24, "tasks": ["19.5"] },
+    { "id": 25, "tasks": ["19.6"] }
   ]
 }
 ```

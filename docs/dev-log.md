@@ -124,3 +124,14 @@
 - Deviations from the design: none
 - Tests: `uv run python driver.py pt_client.py 8` on CPython 3.14.4, prompt_toolkit 3.0.53: (a) 8/8 update above prompt with partial input kept; (b) update <=0.005 s, `/status` <=0.13 s, `/approve` <=0.09 s. Fallback (`fb_client.py`, 8 runs): (b) within 2 s but (a) fails 8/8 (output overwrites the prompt line).
 - Follow-ups: prompt_toolkit chosen, no requirements issue for 11.9/11.11. Not verified: real terminal emulator behaviour, resize, paste, long wrapped lines, higher stream rates. Operator commands are in `spikes/v2-prompt-toolkit/NOTES.md`.
+
+## Task 3 - Checkpoint - spike gate (2026-11-15)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: none listed; gate on Decisions D2, D3
+- What changed: only this entry. No code, spec or report edits.
+- Decisions: none. Open items for the Operator are listed in the task 3 report (17b items, task 2.1 python pin, 2.2 wildcard-hour DST, 2.3 manual terminal check).
+- Deviations from the design: none
+- Tests: not run. No `tests/` directory exists yet (created by task 4.1).
+- Follow-ups: gate passes. `docs/spike-p0-01-report.md` exists, names backend A (Python SDK `openai-codex` 0.169.0), has no pending sections, and records unattended login working (D3 not failed). No `pixie-spike-*` units remain. `.codex-home` is git-ignored and untracked. Secret scan of `spikes/` and `docs/` (excluding `.codex-home`) found no emails, JWT-like, sk-/ghp_-style strings. Long-string matches (40+ hex, 48+ char runs) are in a few files, see report. Task 4 not started.
