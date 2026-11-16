@@ -1,0 +1,37 @@
+python=3.14.4 cronsim=2.8
+[PASS] NY gap: '30 2 * * *' fires once on 2026-03-08, at first valid instant after the gap (03:00 EDT)
+   expected: 1 fire at 2026-03-08T03:00:00-04:00 (fold=0, utc=2026-03-08T07:00Z)
+   observed: 1 fire(s): ['2026-03-08T03:00:00-04:00 (fold=0, utc=2026-03-08T07:00Z)']
+[PASS] NY gap: next day returns to 02:30 EDT
+   expected: 2026-03-09T02:30:00-04:00
+   observed: 2026-03-09T02:30:00-04:00 (fold=0, utc=2026-03-09T06:30Z)
+[PASS] NY overlap: '30 1 * * *' fires once on 2026-11-01, at first occurrence (01:30 EDT)
+   expected: 1 fire at 2026-11-01T01:30:00-04:00 (fold=0, utc=2026-11-01T05:30Z)
+   observed: 1 fire(s): ['2026-11-01T01:30:00-04:00 (fold=0, utc=2026-11-01T05:30Z)']
+[PASS] NY overlap: next result after the fire is 2026-11-02 01:30 EST (not the second occurrence)
+   expected: 2026-11-02T01:30:00-05:00
+   observed: 2026-11-02T01:30:00-05:00 (fold=0, utc=2026-11-02T06:30Z)
+   strict-after case '0 12 * * *' ref=2026-03-09T12:00:00-04:00 (fold=0, utc=2026-03-09T16:00Z) -> 2026-03-10T12:00:00-04:00 (fold=0, utc=2026-03-10T16:00Z) ok
+   strict-after case '0 12 * * *' ref=2026-03-09T12:00:00-03:00 (fold=0, utc=2026-03-09T15:00Z) -> 2026-03-10T12:00:00-03:00 (fold=0, utc=2026-03-10T15:00Z) ok
+   strict-after case '*/15 * * * *' ref=2026-06-01T10:15:00-03:00 (fold=0, utc=2026-06-01T13:15Z) -> 2026-06-01T10:30:00-03:00 (fold=0, utc=2026-06-01T13:30Z) ok
+   strict-after case '30 1 * * *' ref=2026-11-01T01:30:00-04:00 (fold=0, utc=2026-11-01T05:30Z) -> 2026-11-02T01:30:00-05:00 (fold=0, utc=2026-11-02T06:30Z) ok
+   strict-after case '30 1 * * *' ref=2026-11-01T01:30:00-05:00 (fold=1, utc=2026-11-01T06:30Z) -> 2026-11-02T01:30:00-05:00 (fold=0, utc=2026-11-02T06:30Z) ok
+   strict-after case '30 2 * * *' ref=2026-03-08T03:00:00-04:00 (fold=0, utc=2026-03-08T07:00Z) -> 2026-03-09T02:30:00-04:00 (fold=0, utc=2026-03-09T06:30Z) ok
+   strict-after case '* * * * *' ref=2026-06-01T10:15:00.000001-03:00 (fold=0, utc=2026-06-01T13:15Z) -> 2026-06-01T10:16:00-03:00 (fold=0, utc=2026-06-01T13:16Z) ok
+[PASS] Strictly-after: next result is never equal to (or before) the reference, incl. ref on a match instant
+   expected: every result > reference (compared as UTC instants)
+   observed: 7/7 ok; bad=[]
+[PASS] Montevideo 2026: '0 9 * * *' fires 365 times, always 09:00 at UTC-3, results tz-aware in that zone
+   expected: 365 fires, all 09:00-03:00, tzinfo America/Montevideo
+   observed: 365 fires; first=2026-01-01T09:00:00-03:00 (fold=0, utc=2026-01-01T12:00Z); last=2026-12-31T09:00:00-03:00 (fold=0, utc=2026-12-31T12:00Z); tz=America/Montevideo
+[PASS] Montevideo: same wall clock differs from NY in UTC (zone of the reference is honored)
+   expected: MV 09:00 = 12:00Z; NY 09:00 EDT = 13:00Z on 2026-06-01
+   observed: MV=2026-06-01T09:00:00-03:00 (fold=0, utc=2026-06-01T12:00Z); NY=2026-06-01T09:00:00-04:00 (fold=0, utc=2026-06-01T13:00Z)
+[PASS] Montevideo historical gap (2014-10-05): '30 2 * * *' fires once at first valid instant (03:00 -02)
+   expected: 1 fire at 2014-10-05T03:00:00-02:00 (fold=0, utc=2014-10-05T05:00Z)
+   observed: 1 fire(s): ['2014-10-05T03:00:00-02:00 (fold=0, utc=2014-10-05T05:00Z)']
+[PASS] Montevideo historical overlap (2014-03-09): '30 1 * * *' fires once at first occurrence (01:30 -02)
+   expected: 1 fire at 2014-03-09T01:30:00-02:00 (fold=0, utc=2014-03-09T03:30Z)
+   observed: 1 fire(s): ['2014-03-09T01:30:00-02:00 (fold=0, utc=2014-03-09T03:30Z)']
+RESULT: ALL PASS (9/9)
+exit=0

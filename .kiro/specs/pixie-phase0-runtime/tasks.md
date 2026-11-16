@@ -57,18 +57,18 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - List the design degradations that apply (design "Degradation by backend") and any requirements issue found (for example slash-only delegation).
     - _Requirements: 1.1 to 1.14, 9.7, 9.8; Decisions: D2, D3, D5_
 
-- [ ] 2. Early verification tasks
-  - [ ] 2.1 Verify uv can provide Python 3.14.4
+- [x] 2. Early verification tasks
+  - [x] 2.1 Verify uv can provide Python 3.14.4
     - Using `uv python list` and a throwaway `uv venv --python 3.14.4`, confirm availability on the Operator's machine.
     - Operator ruling: assume Python 3.14.4. If uv cannot provide it, the stated outcome is to default to Python 3.12; record the chosen version ("3.14.4" or "3.12") and the reason in `docs/spike-p0-01-report.md` and in the verification notes (task 19.6).
     - The version recorded here is authoritative: `requires-python` and the interpreter pin (4.1), the unit file (17.1), setup (17.2) and the documentation (19.2, 19.4) must use whichever version this task records.
     - _Requirements: 1.10, 16.13, 20.5; Decisions: D31_
-  - [ ] 2.2 V-1: verify cronsim on Python 3.14.4
+  - [x] 2.2 V-1: verify cronsim on Python 3.14.4
     - In a throwaway uv environment, install and check timezone-aware evaluation for `America/Montevideo` and a DST zone (for example `America/New_York`), spring-forward gap (fires once at first valid instant after the gap), fall-back overlap (fires once, first occurrence), strictly-after-reference results.
     - Record the result; failure means choosing another library behind `cron.py`, not changing the design. Must finish before task 14.1.
     - Run on the Python version recorded by task 2.1.
     - _Requirements: 6.1, 6.2, 6.3; Decisions: D14_
-  - [ ] 2.3 V-2: verify prompt_toolkit for the Chat_Client
+  - [x] 2.3 V-2: verify prompt_toolkit for the Chat_Client
     - In a throwaway uv environment on Python 3.14.4 check: (a) text printed from a background task appears above the input line (`patch_stdout`); (b) while a reply streams, a task update appears within 2 s and `/status` and `/approve` typed mid-stream are answered within 2 s.
     - If it fails or is flaky, select the fallback (plain `input()` in a worker thread, updates printed from the event loop) and run the same checks (a) and (b) against it; record the result. If neither meets 2 s, record it as a requirements issue for 11.9 and 11.11.
     - _Requirements: 11.9, 11.11_

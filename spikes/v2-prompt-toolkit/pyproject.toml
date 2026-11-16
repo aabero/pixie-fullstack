@@ -1,0 +1,8 @@
+[project]
+name = "v2-prompt-toolkit"
+version = "0.1.0"
+requires-python = ">=3.14.4"
+dependencies = [
+    "prompt-toolkit>=3.0.53",
+    "pyte>=0.8.2",
+]

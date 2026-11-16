@@ -93,3 +93,34 @@
 - Deviations from the design: none in the work. Report item 17 lists findings that contradict or are missing from requirements/design: 3.16 ancestor AGENTS.md, approval handler model vs async `answer_approval`, read confinement vs `SandboxSpec`, interrupt blocked by a pending approval handler.
 - Tests: not run (documentation task, no new experiments).
 - Follow-ups: Operator runs lingering, logout and reboot checks (D5); Operator reads the Terms of Use on automated use; task 2.1 decides the Python version.
+
+## Task 2.1 - Verify uv can provide Python 3.14.4 (2026-11-15)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: none listed; Decision D31 (uv), Operator ruling to assume 3.14.4
+- What changed: `spikes/p0-01/NOTES-2.1.md` (new, command and result table); `docs/spike-p0-01-report.md` section 18 now records the chosen version 3.14.4 instead of "pending".
+- Decisions: Python 3.14.4, no 3.12 fallback. `uv python list` shows 3.14.4 installed at `/usr/bin/python3.14`; `uv venv --python 3.14.4` in a temp dir succeeded (exit 0) and reported 3.14.4. Temp dir removed.
+- Deviations from the design: none
+- Tests: not run (verification task; no code)
+- Follow-ups: the interpreter is the system one; uv lists only 3.14.10 as downloadable, so a managed 3.14.4 is not verified as obtainable. Operator should keep the system python3.14 at 3.14.4 or revisit the pin.
+## Task 2.2 - V-1: verify cronsim on Python 3.14.4 (2026-11-15)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: none listed; Decision D14 (cron library behind `cron.py`)
+- What changed: new throwaway uv project `spikes/v1-cronsim/` (`pyproject.toml`, `uv.lock`, `check_cronsim.py`, `raw-output.txt`, `raw-observations-wildcard-hourly.txt`, `NOTES.md`, `.gitignore`). Not part of the project manifest.
+- Decisions: Montevideo has no DST now, so its gap and overlap checks use the 2014 tzdata transitions; the New_York checks use 2026.
+- Deviations from the design: none
+- Tests: `cd spikes/v1-cronsim && uv run python check_cronsim.py` on CPython 3.14.4, cronsim 2.8: 9 of 9 pass (gap fires once at 03:00, fixed-hour overlap fires once at first occurrence, results strictly after the reference).
+- Follow-ups: cronsim passed, so no replacement library is needed. Wildcard-hour expressions (`0 * * * *`) fire in both overlap hours; task 14.1 should decide whether to suppress that. Not verified: `between`, naive datetimes, DOM/DOW combinations, tzdata version.
+## Task 2.3 - V-2: verify prompt_toolkit for the Chat_Client (2026-11-15)
+
+- Status: partial
+- Spec: pixie-phase0-runtime
+- Requirements: 11.9, 11.11
+- What changed: new throwaway uv project `spikes/v2-prompt-toolkit/` (`pt_client.py`, `fb_client.py`, `driver.py`, `raw-pt.txt`, `raw-fallback.txt`, `NOTES.md`, `uv.lock`). Not in the project manifest.
+- Decisions: no human terminal was available, so the clients ran under a stdlib pty read through the pyte emulator. Results are labelled pty-based in the notes.
+- Deviations from the design: none
+- Tests: `uv run python driver.py pt_client.py 8` on CPython 3.14.4, prompt_toolkit 3.0.53: (a) 8/8 update above prompt with partial input kept; (b) update <=0.005 s, `/status` <=0.13 s, `/approve` <=0.09 s. Fallback (`fb_client.py`, 8 runs): (b) within 2 s but (a) fails 8/8 (output overwrites the prompt line).
+- Follow-ups: prompt_toolkit chosen, no requirements issue for 11.9/11.11. Not verified: real terminal emulator behaviour, resize, paste, long wrapped lines, higher stream rates. Operator commands are in `spikes/v2-prompt-toolkit/NOTES.md`.

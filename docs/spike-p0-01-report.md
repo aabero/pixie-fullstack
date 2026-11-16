@@ -320,6 +320,17 @@ Status: **verified** for the degradation table and the issues as recorded in the
 
 ## 18. Python version decision from task 2.1
 
-Pending task 2.1. This report does not decide it. Evidence available for that task: the whole spike ran on CPython 3.14.4 and passed (section 2); 3.12 and 3.13 have import-only checks and no full run (section 2).
+**Chosen Python version: 3.14.4.** The 3.12 fallback does not apply. Reason: uv can provide 3.14.4 on the Operator's machine. Date: 2026-11-15. Notes: [NOTES-2.1](../spikes/p0-01/NOTES-2.1.md).
 
-Status: **not verified**. The decision belongs to task 2.1 and has not been made.
+| Check | Command | Observed result | Python |
+| --- | --- | --- | --- |
+| uv present | `uv --version` | `uv 0.13.8` | n/a |
+| Availability | `uv python list` | `cpython-3.14.4-linux-x86_64-gnu` installed at `/usr/bin/python3.14`; 3.13.18 and 3.12.16 also installed; 3.14.10 downloadable only | 3.14.4 |
+| Throwaway venv | `uv venv --python 3.14.4 <tmp>/venv` | Exit 0, "Using CPython 3.14.4 interpreter at: /usr/bin/python3.14" | 3.14.4 |
+| Interpreter check | `<tmp>/venv/bin/python -c "import sys; print(sys.version)"` | `3.14.4 (main, Aug 20 2026, 10:41:58) [GCC 15.2.0]` | 3.14.4 |
+| Cleanup | `rm -rf <tmp>` | Directory removed | n/a |
+| Spike evidence | section 2 | Every spike run (1.1 to 1.7) ran on 3.14.4 and passed | 3.14.4 |
+
+Not verified: the 3.14.4 interpreter is the system one (`/usr/bin/python3.14`), not a uv-managed download. The uv list offers 3.14.10, not 3.14.4, as a download, so if the system interpreter is removed or upgraded, `uv` could not fetch 3.14.4 and the pin would need to be revisited by the Operator. Tasks 4.1, 19.4 and 19.6 use 3.14.4.
+
+Status: **verified** for availability and venv creation of 3.14.4 on this machine. **Not verified**: availability of 3.14.4 as a uv-managed download (see above).
