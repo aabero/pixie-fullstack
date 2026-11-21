@@ -135,3 +135,37 @@
 - Deviations from the design: none
 - Tests: not run. No `tests/` directory exists yet (created by task 4.1).
 - Follow-ups: gate passes. `docs/spike-p0-01-report.md` exists, names backend A (Python SDK `openai-codex` 0.169.0), has no pending sections, and records unattended login working (D3 not failed). No `pixie-spike-*` units remain. `.codex-home` is git-ignored and untracked. Secret scan of `spikes/` and `docs/` (excluding `.codex-home`) found no emails, JWT-like, sk-/ghp_-style strings. Long-string matches (40+ hex, 48+ char runs) are in a few files, see report. Task 4 not started.
+
+## Planning - spike-gate decisions recorded in tasks.md (2026-11-20)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: spike report section 17b; decisions D2, D3, D5, D14, D31
+- What changed: `tasks.md` annotated with the Operator's gate decisions (tasks 2.1, 4.1, 5.2, 6.4, 6.8, 8.1 to 8.3, 10.1 to 10.3, 10.6, 14.1, 14.5, 17.1 to 17.3, 19.2, 19.4, 19.6); new non-optional sub-task 3.1 (non-blocking approvals spike) added before task 4, dependency graph now waves 0 to 25; Overview reworded so it pins no Python version.
+- Decisions: confirmed 17b-1, 3, 4, 5, 6, 7, 9, 12; Python `>=3.14.4,<3.15` (system python3.14, patch mismatch warns); cron overlap rule (a repeated local time fires once, so an hourly wildcard fires 24 times on a 25-hour day); cronsim and prompt_toolkit kept; D5 deferred to unit 17.1.
+- Deviations from the design: `SandboxSpec` gains `read_roots`; design line 25 (instruction discovery) is contradicted by spike section 11; J-16 and the setup prerequisite say Python 3.12 or newer. Design and requirements not edited. The cron rule matches design line 513 and Property 6, so it is not a deviation.
+- Tests: not run (planning edit); `validate_spec_format` passed on tasks.md.
+- Follow-ups: open until 3.1 (17b-2, 17b-10); open until 8.1 (17b-11); Operator actions: read the Terms of Use (17b-8), check prompt_toolkit in a real terminal (V-2), logout/boot checks (D5).
+
+## Task 3.1 - Pre-execution record, before starting (2026-11-20)
+
+- Status: not started (readiness record only)
+- Spec: pixie-phase0-runtime
+- Requirements: 1.4, 1.5, 8.3, 8.4, 8.15; Decisions D2, D25
+- State checked: 3.1 is the next unchecked task (task 3 is checked, task 4 is blocked behind 3.1); no `pixie-spike-*` units are running; `spikes/p0-01/.codex-home` and its `auth.json` are git-ignored; `git status` shows only `tasks.md` and `docs/dev-log.md` modified.
+- Open items 3.1 must resolve: 17b-2 (approval handler blocks the SDK reader thread) and 17b-10 (10 s interrupt bound during an approval wait). 17b-11 is deferred to 8.1.
+- Questions 3.1 must answer: (a) a non-blocking way to answer approvals through the SDK, (b) a direct app-server client where the Runtime owns the read loop, (c) the `accept` path and whether the command then runs, (d) `CodexClient(config, approval_handler=...)` without private attributes, (e) interrupt during a pending approval within 10 s.
+- Stop rule: if a pending approval and a working interrupt cannot coexist, stop and ask the Operator to choose between changing Requirement 8.15 / D25 and a deny-and-resume model.
+- After 3.1: remind the Operator of the design amendment batch (read_roots, design line 25, J-16 and setup prerequisite, and 8.15/D25 if needed) before task 4.
+
+## Task 3.1 - Spike non-blocking approvals (2026-11-21)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 1.4, 1.5, 8.3, 8.4, 8.15; Decisions D2, D25
+- What changed: new `spikes/p0-01/run_approval_nb_probe.py`, `run_approval_nb_unit.sh`, `NOTES-3.1.md`, raw `raw/nb-*.redacted.json`; addenda appended to sections 5 and 17b-2 of `docs/spike-p0-01-report.md` (existing text unchanged).
+- Result: a pending approval and a working interrupt coexist when the Runtime owns the read loop (direct JSON-RPC client: interrupt 0.009 s; patched SDK reader loop: 0.013 s). Unmodified SDK (handler, thread hand-off, AsyncCodex) does not meet 10 s. Accept runs the command outside the sandbox. `CodexClient(config, approval_handler=...)` works without private attributes. Interrupt cancels the pending approval (`serverRequest/resolved`).
+- Decisions: used a minimal own JSON-RPC client in the probe; no choice made about the adapter backend interface.
+- Deviations from the design: none new; confirms the design's async `answer_approval` needs a non-SDK reader loop.
+- Tests: spike runs only, six transient units, all completed; units cleaned up. No unit tests (spike).
+- Follow-ups: design amendment batch still pending (Operator's call); task 5.2 interface decision; not verified: waits >240 s, file-change approvals, network after accept.

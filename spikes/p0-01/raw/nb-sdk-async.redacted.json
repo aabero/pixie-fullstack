@@ -1,0 +1,122 @@
+{
+  "mode": "sdk-async",
+  "input": "Use a shell command to create a file named approval-probe.txt in the current directory containing the word hello. If the sandbox blocks the write, request approval to run it outside the sandbox. Do not do anything else.",
+  "start": "2026-11-21T02:09:51.980372+00:00",
+  "approval_requests": [
+    {
+      "t_request_s": 7.56,
+      "method": "item/commandExecution/requestApproval",
+      "handler_thread": "Thread-2 (_reader_loop)",
+      "command": "/usr/bin/zsh -lc \"printf '%s\\\\n' hello > approval-probe.txt\"",
+      "released_by_main": true,
+      "answered_at_s": 20.574
+    }
+  ],
+  "events": [
+    {
+      "t": 1.384,
+      "method": "turn/started"
+    },
+    {
+      "t": 2.368,
+      "method": "item/started",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 2.369,
+      "method": "item/completed",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 4.098,
+      "method": "item/started",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 4.099,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.099,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.099,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.122,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.122,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.122,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.122,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.122,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.122,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.27,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.436,
+      "method": "item/completed",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 4.896,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 4.994,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 7.56,
+      "method": "item/started",
+      "item_type": "commandExecution",
+      "item_status": "CommandExecutionStatus.in_progress"
+    },
+    {
+      "t": 20.575,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 20.575,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 20.576,
+      "method": "turn/completed",
+      "turn_status": "TurnStatus.interrupted"
+    }
+  ],
+  "notes": [],
+  "constructor_has_handler_param": false,
+  "handler_installed_via": "private attribute AsyncCodex._client._sync._approval_handler",
+  "interrupt": {
+    "sent_at_s": 10.563,
+    "returned_within_10s": false,
+    "handler_released_at_s": 20.574
+  },
+  "followup_status": "TurnStatus.completed",
+  "followup_response": "OK",
+  "file_created_in_cwd": false,
+  "outcome": "completed",
+  "end": "2026-11-21T02:10:14.280241+00:00",
+  "elapsed_s": 22.3
+}

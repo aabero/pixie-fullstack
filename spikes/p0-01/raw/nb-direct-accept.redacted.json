@@ -1,0 +1,227 @@
+{
+  "mode": "direct-accept",
+  "input": "Run exactly one shell command: sh -c 'echo hello > approval-probe.txt; echo hello > /tmp/pixie-spike-out-uy7cuq4j/approval-outside.txt; echo done'. The sandbox is read-only, so request approval to run it outside the sandbox. Do nothing else, then reply with the command output.",
+  "start": "2026-11-21T01:57:07.453288+00:00",
+  "approval_requests": [
+    {
+      "t_request_s": 6.242,
+      "method": "item/commandExecution/requestApproval",
+      "param_keys": [
+        "availableDecisions",
+        "command",
+        "commandActions",
+        "cwd",
+        "environmentId",
+        "itemId",
+        "kind",
+        "proposedExecpolicyAmendment",
+        "reason",
+        "startedAtMs",
+        "threadId",
+        "turnId"
+      ],
+      "command": "/usr/bin/zsh -lc \"sh -c 'echo hello > approval-probe.txt; echo hello > /tmp/pixie-spike-out-uy7cuq4j/approval-outside.txt; echo done'\"",
+      "reason": "Do you want to allow this exact command to run outside the read-only sandbox?",
+      "available_decisions": [
+        "accept",
+        {
+          "acceptWithExecpolicyAmendment": {
+            "execpolicy_amendment": [
+              "sh",
+              "-c",
+              "echo hello > approval-probe.txt; echo hello > /tmp/pixie-spike-out-uy7cuq4j/approval-outside.txt; echo done"
+            ]
+          }
+        },
+        "cancel"
+      ],
+      "rpc_id_type": "int"
+    }
+  ],
+  "events": [
+    {
+      "t": 0.223,
+      "method": "remoteControl/status/changed"
+    },
+    {
+      "t": 0.451,
+      "method": "account/updated"
+    },
+    {
+      "t": 0.619,
+      "method": "thread/started"
+    },
+    {
+      "t": 0.619,
+      "method": "mcpServer/startupStatus/updated"
+    },
+    {
+      "t": 0.64,
+      "method": "thread/status/changed"
+    },
+    {
+      "t": 0.64,
+      "method": "turn/started"
+    },
+    {
+      "t": 1.25,
+      "method": "mcpServer/startupStatus/updated"
+    },
+    {
+      "t": 2.271,
+      "method": "item/started",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 2.273,
+      "method": "item/completed",
+      "item_type": "userMessage"
+    },
+    {
+      "t": 4.309,
+      "method": "item/started",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 4.309,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.309,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.309,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.309,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.309,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.326,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.327,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.327,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.327,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.327,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 4.62,
+      "method": "item/completed",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 6.222,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 6.242,
+      "method": "thread/status/changed"
+    },
+    {
+      "t": 6.242,
+      "method": "item/started",
+      "item_type": "commandExecution",
+      "item_status": "inProgress"
+    },
+    {
+      "t": 31.281,
+      "method": "serverRequest/resolved"
+    },
+    {
+      "t": 31.282,
+      "method": "thread/status/changed"
+    },
+    {
+      "t": 31.338,
+      "method": "item/completed",
+      "item_type": "commandExecution",
+      "item_status": "completed",
+      "item_exitCode": "0",
+      "item_aggregatedOutput": "done\n"
+    },
+    {
+      "t": 31.343,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 31.343,
+      "method": "account/rateLimits/updated"
+    },
+    {
+      "t": 32.623,
+      "method": "item/started",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 32.623,
+      "method": "item/agentMessage/delta"
+    },
+    {
+      "t": 32.691,
+      "method": "turn/moderationMetadata"
+    },
+    {
+      "t": 32.695,
+      "method": "item/completed",
+      "item_type": "agentMessage"
+    },
+    {
+      "t": 32.701,
+      "method": "thread/tokenUsage/updated"
+    },
+    {
+      "t": 32.701,
+      "method": "account/rateLimits/updated"
+    },
+    {
+      "t": 32.706,
+      "method": "thread/readState/changed"
+    },
+    {
+      "t": 32.706,
+      "method": "thread/status/changed"
+    },
+    {
+      "t": 32.706,
+      "method": "turn/completed",
+      "turn_status": "completed"
+    }
+  ],
+  "notes": [],
+  "handler_installed_via": "own JSON-RPC client; server requests are queued, answered by Runtime code later",
+  "other_request_latency_while_pending_s": [
+    0.003,
+    0.002,
+    0.002,
+    0.003,
+    0.003
+  ],
+  "held_s": 30.65,
+  "answer_sent_at_s": 31.279,
+  "turn_completed": true,
+  "file_in_cwd": true,
+  "file_outside_cwd": true,
+  "file_in_cwd_content": "hello",
+  "file_created_in_cwd": true,
+  "outcome": "completed",
+  "end": "2026-11-21T01:57:40.175209+00:00",
+  "elapsed_s": 32.72
+}

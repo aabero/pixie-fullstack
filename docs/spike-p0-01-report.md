@@ -88,6 +88,18 @@ Evidence: [NOTES-1.4](../spikes/p0-01/NOTES-1.4.md), raw [approval-decline](../s
 
 Status: **verified** for surfacing and for unattended wait behavior (240 s). **Not verified** for the accept path, file-change approvals and longer waits.
 
+### Addendum to section 5 (task 3.1, 2026-11-21)
+
+Evidence: [NOTES-3.1](../spikes/p0-01/NOTES-3.1.md), raw `spikes/p0-01/raw/nb-*.redacted.json`. Runs `pixie-spike-nb-<mode>`, 2026-11-21 01:49 to 02:10 UTC, all `completed`.
+
+- **Accept path (verified, one command).** Direct client, approval held 25 s, then `{"decision": "accept"}`: the command ran (exit 0), and both a write in the read-only cwd and a write to a second directory outside it succeeded. Accept lifts the sandbox for that command. Network after accept, `acceptWithExecpolicyAmendment` and file-change approvals: not verified.
+- **Constructor handler (verified).** `CodexClient(CodexConfig(), approval_handler=h)` works with no private attribute (handler called, `decline` honored, thread usable after). The handler still runs on the SDK reader thread.
+- **SDK has no way to answer later (verified, source plus runs).** The handler's return value is the reply. Handing the decision to another thread (`sdk-handoff`) and the async wrapper (`sdk-async`, which has no handler parameter and uses the auto-accept default unless a private attribute is set) both left `turn.interrupt()` unanswered for more than 10 s while the approval was pending. A `CodexClient` subclass overriding `_reader_loop` (private members) answered the approval from a worker pool and the interrupt returned in 0.013 s.
+- **Direct app-server client (verified).** With the Runtime owning the read loop, a pending approval did not stall other traffic (`thread/read` answered in 0.002 to 0.051 s during the wait) and `turn/interrupt` returned in 0.009 s with the turn `interrupted`. The backend then sent `serverRequest/resolved` for the pending request. A later reply to that stale request id produced no visible error. The thread stayed usable.
+- Waits observed: 24 s with other requests served (direct), plus the 240 s held-handler run of section 5. Longer waits remain not verified.
+
+Status of the addendum: **verified** for the runs listed; the items marked not verified stay open.
+
 ## 6. Failure signals: expired auth, network, usage limit (Requirement 1.6)
 
 Evidence: [NOTES-1.4](../spikes/p0-01/NOTES-1.4.md) section 2 and [NOTES-1.3](../spikes/p0-01/NOTES-1.3.md) section 3. Raw: [failure-netfail-base](../spikes/p0-01/raw/failure-netfail-base.redacted.json), [failure-netfail-proxy](../spikes/p0-01/raw/failure-netfail-proxy.redacted.json), [failure-usage](../spikes/p0-01/raw/failure-usage.redacted.json) (discarded as a usage result), [failure-usage-provider](../spikes/p0-01/raw/failure-usage-provider.redacted.json), [login-probe-1](../spikes/p0-01/raw/login-probe-1.redacted.json), [login-probe-2](../spikes/p0-01/raw/login-probe-2.redacted.json).
@@ -313,6 +325,10 @@ None of these edit `requirements.md` or `design.md`. They are for the Operator t
 10. **Design says "SDK interrupt is expected" (Requirement 1.4, 5.5, 10.6).** The 10 s bound held only for a model-streaming turn. During an approval wait it depends on the handler (see issue 2).
 11. **`backend_pid_report` and `output_schema` have no evidence** (section 15). If the design depends on them (Requirements 7.4 and 7.11 for the pid; the structured-output fallback for 12.1), they need a test before use.
 12. **Credential store default.** The Runtime should set `cli_auth_credentials_store = "file"` explicitly. The default was not established.
+
+### Addendum to 17b-2 (task 3.1, 2026-11-21)
+
+Pending approval and working interrupt coexist when the application owns the read loop. Mechanisms, in [NOTES-3.1](../spikes/p0-01/NOTES-3.1.md): (1) a direct app-server JSON-RPC client: interrupt returned in 0.009 s with the approval unanswered, and the backend then emitted `serverRequest/resolved`; (2) a `CodexClient` subclass overriding the private `_reader_loop`: 0.013 s. The public SDK does not support it: a waiting handler (also via thread hand-off or `AsyncCodex`) leaves interrupt unanswered beyond 10 s. So an asynchronous `answer_approval` model, where a human answers later while the Attempt holds its slot, is possible with a direct client or a patched reader loop, not with the unmodified SDK. The interrupt cancels the pending approval (it is resolved by the backend), so a held approval does not survive an interrupt. This changes the adapter's backend interface choice, not Requirement 8.15 or D25; the choice is left to the Operator (task 5.2). Accepting a request lifts the sandbox for that command (section 5 addendum).
 
 Contradictions with requirements or design, in short: issues 1, 2, 3 and 10 contradict assumptions in Requirement 3.16, the `answer_approval` model, the `SandboxSpec` shape and the interrupt expectation. Issues 4 to 9, 11 and 12 are gaps or constraints that the documents do not yet state.
 

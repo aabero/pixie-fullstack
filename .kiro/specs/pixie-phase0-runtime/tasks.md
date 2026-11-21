@@ -2,12 +2,12 @@
 
 ## Overview
 
-The implementation language is Python 3.12+ (the design names it; target machine runs 3.14.4). All environments, installs and test runs use `uv` (D31): `uv sync`, `uv run pytest`, never stdlib `venv` or bare `pip`.
+The implementation language is Python. The exact interpreter version is the one recorded by task 2.1 and applied by task 4.1, so this overview does not fix it. All environments, installs and test runs use `uv` (D31): `uv sync`, `uv run pytest`, never stdlib `venv` or bare `pip`.
 
 The plan is ordered so that the riskiest unknowns are resolved first and a thin end-to-end loop exists early:
 
 1. The Requirement 1 spike runs first and gates everything (D2, D3, D5).
-2. Early verification tasks (uv Python 3.14.4, V-1 cronsim, V-2 prompt_toolkit) run before the components that depend on them.
+2. Early verification tasks (uv Python version check, V-1 cronsim, V-2 prompt_toolkit) run before the components that depend on them.
 3. A thin slice (chat, persist task, disconnect, execute, reconnect, discuss the result) is built with the fake adapter, then the spike-selected adapter is added. Phase 0 builds only the selected Codex adapter plus the fake one.
 4. Safety (permissions, approvals, cancellation, recovery), Vault, schedules, notifications, Doctor, setup, update, repository disposition, documentation and the verification record follow.
 
@@ -83,6 +83,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Record observations in `spikes/p0-01/NOTES-3.1.md` and append an addendum to sections 5 and 17b-2 of `docs/spike-p0-01-report.md` (append only; keep existing text).
     - Outcome rule: if a pending approval and a working interrupt can coexist, the design holds; record the mechanism. If they cannot, STOP and ask the Operator to choose between changing Requirement 8.15/D25 or adopting a deny-and-resume model. Do not continue to task 4 until the Operator decides.
     - Stop transient units and clean up when finished; redact any account details from saved output.
+    - Operator reminder (design amendment batch): when this task is finished, and before task 4 starts, tell the Operator about the pending design amendment batch. The batch is applied only at the Operator's request, never by the implementing agent. Contents: (a) `SandboxSpec` gains `read_roots` and uses named permission profiles (design lines 400 and 717); (b) design line 25 and the "Instruction isolation" section: a working directory outside a repository does not avoid inherited ancestor `AGENTS.md`, so isolation relies on `project_doc_max_bytes=0` plus `explicit` injection; (c) J-16 and the setup prerequisite check ("Python 3.12 or newer") change to the pinned `>=3.14.4,<3.15`; (d) if this task shows that an approval wait and a working interrupt cannot coexist, Requirement 8.15, D25 and the `answer_approval` model also need the Operator's decision. The cron overlap rule is not part of the batch: it already matches design line 513 and Property 6.
     - _Requirements: 1.4, 1.5, 8.3, 8.4, 8.15; Decisions: D2, D25_
 
 - [ ] 4. Project foundation, configuration and Store
@@ -136,6 +137,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - The capability flags are those named in the spike report (**SPIKE-DEPENDENT**, D2; unknown flags default to false so the system fails closed).
     - Operator decision (17b-2 and 17b-10, OPEN): approvals and the interrupt bound depend on the outcome of task 3.1 (non-blocking approvals spike) and must not be implemented until 3.1 is done. If 3.1 changes the adapter interface (for example how an approval is answered), this task changes.
     - Operator decision (17b-3): add `read_roots` to `SandboxSpec`; confinement uses named permission profiles; the Codex binary directory is listed as readable.
+    - Note (17b-11): `BackendRefs.pid` and `BackendRefs.pid_start` must be nullable/optional in the adapter interface, because 17b-11 (backend pid report and `output_schema`) is deferred to task 8.1. The interface must work with both flags absent.
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
   - [ ] 5.3 Implement the fake adapter
     - `adapter/fake.py`: scripted events, blockable approvals, ignorable cancellation, configurable liveness, all capability flags settable, injectable `on_refs` failure.
@@ -179,6 +181,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - `chat.py`: connect within 5 s (else error, no Conversation, non-zero exit), display the Conversation id before the first message, resume offer, streamed output, immediate Task update entries, unread-result count on reconnect, status and approval answers within 2 s while a Task runs.
     - Rendering uses prompt_toolkit or the threaded `input()` fallback, whichever V-2 (task 2.3) selected.
     - Operator decision (V-2): prompt_toolkit 3.0.53 is selected (pty-based result only). The Operator checks it in a real terminal using `spikes/v2-prompt-toolkit/NOTES.md`; this does not block any task.
+    - Operator reminder (V-2): at the start of this task, before other work, tell the Operator to run the real-terminal check of prompt_toolkit from `spikes/v2-prompt-toolkit`: `V2_LOG=/tmp/v2-pt.log uv run python pt_client.py`. Type `hel` without Enter around second 3 and confirm the update appears above the prompt with `hel` kept; type `/status` and `/approve` mid-stream and confirm immediate answers; also try resize, paste and a long wrapped line (details in `spikes/v2-prompt-toolkit/NOTES.md`). The agent must not run this check itself. The result does not block the task; if the check fails, revisit the fallback.
     - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.7, 11.9, 11.10, 11.11, 11.12_
   - [ ] 6.9 Wire and verify the end-to-end slice with the fake adapter
     - Integration test: start the Runtime, chat `/task`, receive confirmation with identifier, close the client, the Worker executes, reconnect, see the unread Result, ask about it in chat; assert the Task survived the disconnect and appears in both chat and `pixie tasks show`.
@@ -214,6 +217,8 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
 - [ ] 8. Selected Codex adapter (SPIKE-DEPENDENT)
   - [ ] 8.1 Implement the selected Codex adapter
     - **SPIKE-DEPENDENT (D2):** implement only the interface selected by the spike (SDK, else app-server JSON-RPC client for the used subset, else `codex exec`) in `adapter/<selected>.py`: submit, observe, request_cancel, get_result, thread resume, raw-event mapping table, dedicated `CODEX_HOME`, absolute executable path, no reading of Codex credential files, no write of credentials to the repository.
+    - Operator reminder (17b-8, D3, requirement 2.14): at the start of this task, before any real-adapter work, tell the Operator to read the OpenAI Terms of Use and check the plan and usage limits for unattended personal-subscription use. The agent must not make this judgement itself. If the terms do not allow it, stop and treat it as a scope question.
+    - 17b-11 is decided in this task: test the backend pid report first; treat `output_schema` as absent unless the Operator says otherwise.
     - Degradation: SDK failing falls to app-server, then to `exec`; `exec` loses backend approvals and possibly host tools (design "Degradation by backend"); nothing above the adapter changes.
     - Operator decision (17b-2 and 17b-10, OPEN): approvals and the interrupt bound depend on the outcome of task 3.1 (non-blocking approvals spike) and must not be implemented until 3.1 is done.
     - Operator decision (17b-1): set `project_doc_max_bytes=0` in the thread config plus `explicit` injection (developerInstructions); never rely on the working directory alone.
@@ -387,6 +392,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - `systemd/pixie-runtime.service.in`: `Type=notify`, absolute interpreter in the uv-managed environment, absolute Codex path, minimal `PATH` with the `node` directory, 30 s start and stop timeouts, `Restart=on-failure`, growing delay with `RestartSteps`/`RestartMaxDelaySec` when `systemctl --version` supports them else fixed `RestartSec`, start limit 5 in 300 s, `KillMode=control-group`; never invokes uv or a shell startup file.
     - Operator decision (Python pin): `requires-python = ">=3.14.4,<3.15"` with `.python-version` 3.14.4. Task 2.1 recorded 3.14.4 (system `/usr/bin/python3.14`; uv can only download 3.14.10); the 3.12 fallback was not triggered.
     - Operator decision (D5): logout and boot survival checks are deferred until the real unit exists (this task). The Operator runs them. Do not enable lingering (`loginctl enable-linger`) without the Operator's agreement.
+    - Operator reminder (D5): before the first start of the real unit, tell the Operator that the D5 checks are theirs to run (lingering state, logout survival, boot start, per report section 16). The agent must not run them and must not enable lingering without the Operator's agreement.
     - _Requirements: 9.1, 9.2, 9.4, 9.5, 9.10, 9.11, 9.12, 9.13, 9.14; Decisions: D32_
   - [ ] 17.2 Implement the Setup_Script
     - `scripts/setup.sh`, `scripts/prereqs.py`, `setup.py`: check `uv` first (stop with install instructions, never auto-install), prerequisites named before any change, stop the running service (abort untouched if it cannot stop), `uv sync --locked --no-dev` into `<home>/venv`, create-only Runtime_Home, Codex_Home mode 0700/0600 with tightening reported, Agent_Instructions install (existing `AGENTS.md` left byte-for-byte, template beside it), deterministic Vault creation from the adapted templates with no interview and no Obsidian access, unit install and `daemon-reload`, ask before enabling lingering and before first enable, `install-manifest.json`, restart only per the Operator's choices with a report, versioned config migration shown and backed up first.
@@ -447,6 +453,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
     - Unverified until the Operator reads the Terms of Use (17b-8): unattended personal use of the ChatGPT subscription. Operator action, no code task.
     - Unverified until the Operator checks (D5): service survival after logout and start at boot, run by the Operator after 17.1 exists. Lingering is not enabled without the Operator's agreement.
     - Unverified until the Operator checks (V-2): prompt_toolkit 3.0.53 in a real terminal, using `spikes/v2-prompt-toolkit/NOTES.md` (pty-based result only so far).
+    - Note: the three Operator reminders (6.8, 8.1, 17.1) feed these unverified items, so the record should show whether each was done.
     - _Requirements: 19.1, 19.3, 19.5, 19.6, 19.7, 19.9, 9.7, 9.8; Decisions: D5, D6, D27_
 
 - [ ] 20. Final checkpoint - Ensure all tests pass
