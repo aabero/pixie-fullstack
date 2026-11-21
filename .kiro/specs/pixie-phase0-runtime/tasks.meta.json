@@ -173,6 +173,13 @@
         "chatSessionId": "sess_bc869ee1-99a0-4d58-8009-61560bc53ba1",
         "timestamp": 1794788994783
       }
+    ],
+    "3.1 Spike non-blocking approvals": [
+      {
+        "executionId": "6d9acb48-0d12-43e5-a218-22feb60a290a",
+        "chatSessionId": "sess_42f19963-e05b-4c8c-9e40-c4ee8727a11a",
+        "timestamp": 1795263797537
+      }
     ]
   }
 }

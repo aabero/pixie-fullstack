@@ -232,6 +232,7 @@ This document is a specification only. Nothing in it authorizes implementation, 
 16. IF the backend cannot confine reads to the Project_Directory and the Vault, THEN THE Runtime SHALL still run the Task, SHALL record a `read_confinement_unavailable` warning Event on every Attempt, and THE Doctor_Script SHALL report the limitation; write bounds remain fail-closed under criterion 13.
 17. WHEN an Attempt ends or a file-change Event is received, THE Runtime SHALL audit the Results_Location against the per-file and per-Task limits of criterion 2, because the backend sandbox cannot enforce those limits; IF a limit is exceeded, THEN THE Runtime SHALL end the Attempt with error category `limit_exceeded` and retain the files for review.
 18. WHERE the backend does not surface approval requests, THE Runtime SHALL create Approvals only for Runtime-mediated operations (Vault edits and retry review), SHALL record an operation the sandbox denies as a `sandbox_denied` Event, and SHALL record in the verification result that Tasks needing external changes are unsupported with that backend.
+19. WHEN the Runtime presents a backend approval request to the Operator, THE Runtime SHALL show the exact operation (for a command, the full command text and working directory), SHALL NOT select a default answer, and SHALL NOT answer any backend approval request automatically with a grant. A grant lifts the backend sandbox for that exact operation only, and the Runtime SHALL state this in the prompt (spike task 3.1).
 
 ### Requirement 9: Ubuntu service management
 

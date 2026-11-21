@@ -2,7 +2,7 @@
 
 ## Overview
 
-Pixie Phase 0 is a single-user, always-on assistant built inside this fork. It is a Python 3.12+ asyncio daemon (the Runtime, `pixie-runtime.service`) that owns a SQLite Store, a Scheduler, a one-slot Worker, a conversation lane, an approval mechanism, a vault service, and result delivery. Codex is the only execution backend, reached through a narrow application-owned Codex_Adapter. Two thin clients, `pixie chat` and the Task_CLI, talk to the Runtime over a Unix domain socket and never touch the Store, the Scheduler, or the Vault.
+Pixie Phase 0 is a single-user, always-on assistant built inside this fork. It is a Python 3.14.4 (`>=3.14.4,<3.15`) asyncio daemon (the Runtime, `pixie-runtime.service`) that owns a SQLite Store, a Scheduler, a one-slot Worker, a conversation lane, an approval mechanism, a vault service, and result delivery. Codex is the only execution backend, reached through a narrow application-owned Codex_Adapter. Two thin clients, `pixie chat` and the Task_CLI, talk to the Runtime over a Unix domain socket and never touch the Store, the Scheduler, or the Vault.
 
 The design is organised around five ideas.
 
@@ -21,7 +21,7 @@ In scope: everything in `requirements.md` for Phase 0. Out of scope: voice, visu
 Findings gathered while designing. Items marked **unverified** are not confirmed from primary documentation and are routed to the spike or to a verification task.
 
 - Codex documents an OS-enforced sandbox plus a separate approval policy, and a notion of permission profiles that can limit edits to selected roots ([Codex permissions](https://developers.openai.com/codex/permissions), [Codex sandbox and approvals](https://developers.openai.com/codex/sandbox)). Whether **reads** can be confined to a directory is **unverified**; in the sandbox modes described by those pages, read-only is described as inspecting a project, not as confining reads to it.
-- Codex builds its instruction chain from a global file in `CODEX_HOME`, then `AGENTS.md` files from the project root (normally the Git root) down to the working directory, capped at 32 KiB by default ([AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md)). If no project root is found, only the working directory is checked. This drives the decision to run every execution with a working directory outside any repository (Section "Instruction isolation").
+- Codex builds its instruction chain from a global file in `CODEX_HOME`, then `AGENTS.md` files from the project root (normally the Git root) down to the working directory, capped at 32 KiB by default ([AGENTS.md guide](https://developers.openai.com/codex/guides/agents-md)). If no project root is found, only the working directory is checked. Spike P0-01 (report section 11, 17b-1) showed that a working directory outside a repository does not avoid an inherited ancestor `AGENTS.md`; isolation therefore relies on `project_doc_max_bytes = 0` plus `explicit` injection (Section "Instruction isolation").
 - A community report states that in some hardened environments the sandbox can fail quietly and a non-interactive run can exit 0 having run nothing ([sandbox note](https://yeet.cx/topical-takes/sandbox-codex-linux)). This is **unverified** but cheap to guard against: the Doctor_Script and a smoke test include a canary write that must be blocked (8.14).
 - Cron evaluation: `cronsim` is a cron expression parser and evaluator documented as working on Python 3.10+ ([PyPI](https://pypi.org/project/cronsim/)). Python 3.14 install, timezone-aware evaluation, and DST gap and overlap behaviour are **unverified**. The design isolates the library behind `cron.py` and adds a verification task (decision D14 leaves the library as a design choice). `croniter` was not evaluated.
 - systemd restart backoff (`RestartSteps`, `RestartMaxDelaySec`) exists only in newer systemd versions; the version on the Operator's Ubuntu 26.04 machine is **unverified** and the Doctor_Script checks `systemctl --version`. Requirement 9.4 accepts approximate growth from about 2 s up to 60 s, and accepts a fixed `RestartSec` on older systemd provided the fallback is documented (decision D32). Requirement 9.14 requires `docs/operations.md` to state which mechanism is in use, the delay values in effect and the systemd version observed.
@@ -289,7 +289,7 @@ pixie-fullstack/
   LICENSE                        UNCHANGED, byte-for-byte (18.6).
   README.md TROUBLESHOOTING.md CONTRIBUTING.md   REWRITTEN for Phase 0 (18.2), attribution kept.
   components.toml                NEW. Version manifest: remote, Reviewed_Revision, pinned revision, license file hash.
-  pyproject.toml                 NEW. requires-python >=3.12; script entry `pixie`; dependencies managed with uv.
+  pyproject.toml                 NEW. requires-python >=3.14.4,<3.15; script entry `pixie`; dependencies managed with uv.
   uv.lock                        NEW. Exact resolved versions and hashes (uv). The dependency pinning method of Requirement 1.2.
   start.sh                       ADAPTED (18.3). Prints service status and how to run `pixie chat`. Never starts or stops the Runtime.
   update.sh                      ADAPTED. Thin shim to `pixie update` (17). No blind pull (18.5).
@@ -395,9 +395,11 @@ class CodexAdapter(Protocol):
     async def force_stop(self, ref: BackendRef) -> None: ...
 ```
 
+**Approval answering and the read loop (spike task 3.1).** `answer_approval` is asynchronous and may be called long after the backend asked. The unmodified Python SDK cannot support this: its handler's return value is the reply and it runs on the SDK reader thread, so a waiting handler stalls `interrupt`. The adapter therefore owns the read loop (a direct app-server JSON-RPC client), queues server requests, and answers them later; the spike measured interrupt at 0.009 s with an approval pending. An interrupt cancels the pending approval (`serverRequest/resolved`). `accept` lifts the sandbox for the shown command, so the Runtime always shows the exact command, never defaults to `accept`, and has no auto-accept path.
+
 `submit` awaits `on_refs` after the thread reference and again after each turn reference. If `on_refs` raises (persistence failure), the adapter stops and makes no further submissions for that Attempt (2.5, 2.6).
 
-`ExecutionRequest` carries: instructions text, prompt, working directory, `SandboxSpec` (mode, writable roots, network flag, approval policy), model and reasoning effort (both optional), `resume_thread_ref` (optional), host tool set (optional), and an output schema (optional). Callers never pass Codex types.
+`ExecutionRequest` carries: instructions text, prompt, working directory, `SandboxSpec` (mode, writable roots, read roots, network flag, approval policy; confinement is expressed as a named permission profile), model and reasoning effort (both optional), `resume_thread_ref` (optional), host tool set (optional), and an output schema (optional). Callers never pass Codex types.
 
 **Capability record** (`AdapterCapabilities`), each flag set from the spike report and re-verified by `pixie doctor --probe`:
 
@@ -562,7 +564,7 @@ Reads and writes Markdown only. No Obsidian dependency (16.9, 16.10).
 2. `codex_home`: write Agent_Instructions as the global `AGENTS.md` of the dedicated `CODEX_HOME` (`~/.pixie/codex`), which also isolates Pixie from the Operator's personal Codex configuration (permissions and exposure rules in the Permission Planner credentials note). The login is created in this home by setup (`CODEX_HOME=... codex login`). A file-based credential store is requested because a user service may have no keyring (**unverified**, spike item).
 3. `inline`: prepend the text to the first prompt.
 
-Independently of strategy, every execution's working directory is `results/<task_id>/` (or a conversation scratch directory) under `~/.pixie`, never inside this checkout or the Project_Directory, and never inside a Git repository. Because Codex only checks the working directory when no project root exists, the repository's development `AGENTS.md` can never be discovered (3.16, 1.12). The Doctor_Script asserts that `Runtime_Home` is not inside a Git work tree when running in production mode.
+Independently of strategy, every execution sets `project_doc_max_bytes = 0` so that no project `AGENTS.md` is read, and its working directory is `results/<task_id>/` (or a conversation scratch directory) under `~/.pixie`, never inside this checkout or the Project_Directory, and never inside a Git repository. A working directory outside a repository is not enough on its own: the spike showed an ancestor `AGENTS.md` is still inherited when one exists. The `project_doc_max_bytes = 0` setting, with instructions injected through the `explicit` strategy, is what keeps the repository's development `AGENTS.md` from being discovered (3.16, 1.12; spike report section 11). The Doctor_Script asserts that `Runtime_Home` is not inside a Git work tree when running in production mode.
 
 ### RPC server and client interface (`server.py`, `protocol.py`, `client.py`)
 
@@ -608,7 +610,7 @@ Credential values come from `config/secrets.toml`. The Redactor replaces each li
 
 **Setup** (`scripts/setup.sh` checks prerequisites, stops the service if needed, builds the uv-managed environment, then runs `python -m pixie_runtime.setup` from it):
 
-1. Prerequisite check before touching anything. `setup.sh` first checks that `uv` is present (`command -v uv`). If it is missing, setup stops before modifying any file, prints how to install uv (pointing to the uv installation documentation), exits non-zero, and never installs uv itself without the Operator's explicit consent (16.13, D31). It then runs the standard-library-only `scripts/prereqs.py` through `uv run --no-project` (which creates no environment) to check: Python 3.12 or newer available to uv, `systemctl --user`, `git`, the `codex` executable (resolved to an absolute real path from the invoking shell, so nvm is only used at install time), the directory holding `node` if the Codex launcher needs it, and the Vault_Template_Repo checkout. Each missing item is named; exit non-zero with no change (16.8).
+1. Prerequisite check before touching anything. `setup.sh` first checks that `uv` is present (`command -v uv`). If it is missing, setup stops before modifying any file, prints how to install uv (pointing to the uv installation documentation), exits non-zero, and never installs uv itself without the Operator's explicit consent (16.13, D31). It then runs the standard-library-only `scripts/prereqs.py` through `uv run --no-project` (which creates no environment) to check: Python `>=3.14.4,<3.15` available to uv (a patch mismatch warns), `systemctl --user`, `git`, the `codex` executable (resolved to an absolute real path from the invoking shell, so nvm is only used at install time), the directory holding `node` if the Codex launcher needs it, and the Vault_Template_Repo checkout. Each missing item is named; exit non-zero with no change (16.8).
 2. Stop the service (13.9, 16.14, decision D34). If `pixie-runtime.service` is active, record that it was running and whether it was enabled, then `systemctl --user stop` it. If the stop fails or the unit is still active after the stop timeout, setup aborts with a non-zero exit and no file modified. Setup reports whether it stopped the service. This makes every later step run with the Runtime stopped, as the preservation check of 16.11 assumes.
 3. Environment: create or refresh the uv-managed environment under `<home>/venv` with `uv sync --locked --no-dev` from `uv.lock`. The stdlib `venv` module and bare `pip` are never used (16.13). The remaining steps run from this environment.
 4. Create Runtime_Home directories (create-only). Write `pixie.toml` from the example if missing (never overwrite); `secrets.toml` empty 0600.
@@ -714,7 +716,7 @@ Event types (task):  task_created, state_changed, attempt_started, attempt_ended
                   (message, command, file_change, tool_call, progress, usage, error, unmapped, parse_failure),
                   approval_requested, approval_answered, external_action_begin, external_action_end (payload.source: backend_approval | runtime_tool), cancel_requested,
                   cancel_acknowledged, cancel_unacknowledged, warning, result_persisted, delivery_attempted
-SandboxSpec:      { mode, writable_roots[], network, approval_policy, cwd }
+SandboxSpec:      { mode, writable_roots[], read_roots[], network, approval_policy, cwd }   (read confinement and write bounds use a named permission profile; spike 1.11)
 BackendRefs:      { thread_ref, turn_ref, pid, pid_start }
 Operation:        { kind, target, params }  -> canonical JSON -> operation_hash
 ```
@@ -1167,7 +1169,7 @@ These choices were made where the requirements and decisions table leave room. T
 - **J-13.** No forced kill of a backend whose cancellation is unacknowledged; the request stays pending and a service restart resolves it (5.6, 5.12).
 - **J-14.** Chat-created Tasks may only name a Project_Directory inside `projects.allowed_roots`; the model is not trusted to choose paths. Each Codex working directory is the Task's Results_Location.
 - **J-15.** `cronsim` is the first candidate cron library, unverified, isolated behind `cron.py` with DST semantics defined by Property 6.
-- **J-16.** Python 3.12 or newer. `uv` is the only environment and dependency tool (D31): the environment lives in `<Runtime_Home>/venv`, is built with `uv sync --locked` from `uv.lock` (which carries versions and hashes), and is refreshed the same way on update before migrate. Setup requires `uv` to be present and otherwise stops with instructions; it never installs uv without consent. The systemd unit calls the environment's interpreter by absolute path and never invokes uv. Tests run through `uv run`.
+- **J-16.** Python `>=3.14.4,<3.15` (pinned by the Operator after task 2.1; the system `python3.14` is used). `uv` is the only environment and dependency tool (D31): the environment lives in `<Runtime_Home>/venv`, is built with `uv sync --locked` from `uv.lock` (which carries versions and hashes), and is refreshed the same way on update before migrate. Setup requires `uv` to be present and otherwise stops with instructions; it never installs uv without consent. The systemd unit calls the environment's interpreter by absolute path and never invokes uv. Tests run through `uv run`.
 - **J-17.** The conversational wizard is dropped from Phase 0; legacy files are moved with `git mv` to `legacy/`, while root `start.sh` and `update.sh` are copied to `legacy/` and then adapted in place.
 - **J-18.** The Vault is written only by the Runtime on behalf of agents (host tools); agents never get filesystem write access to it.
 - **J-19.** `prompt_toolkit` is the default chat UI, unverified on Python 3.14, with a threaded-`input()` fallback. Task updates are printed immediately as separate entries and are never buffered until a reply ends.

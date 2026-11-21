@@ -76,7 +76,7 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
 
 - [x] 3. Checkpoint - spike gate
   - Confirm the spike report exists and names the selected backend. If D3 failed (no unattended login) stop and ask the user to review scope before continuing. Ensure all tests pass, ask the user if questions arise.
-  - [ ] 3.1 Spike non-blocking approvals
+  - [x] 3.1 Spike non-blocking approvals
     - **Gates tasks 5.2, 8.1, 10.2 and 10.3** (also affects 10.1). Do not implement them until this task is done. If the answer changes the adapter interface, task 5.2 changes.
     - Goal: find out whether a pending approval and a working `interrupt` can coexist, and whether the approval wait can be held while the Attempt stays in the execution slot (Requirement 8.15, D25).
     - Run from `pixie-spike-*` transient units under `spikes/p0-01/` (use the spike runbook) and test: (a) whether the SDK offers an async client or any way to answer an approval without blocking the reader thread (for example a handler delegating to another thread, or an async API); (b) a direct app-server JSON-RPC client where the Runtime owns the read loop; (c) the `accept` decision path, which was never exercised, and whether the command then actually runs; (d) whether `CodexClient(config, approval_handler=...)` works without the private attributes the earlier spike used; (e) interrupt while an approval is pending, with a time bound of 10 s.
@@ -88,12 +88,12 @@ Tasks marked **SPIKE-DEPENDENT** rely on the outcome of the spike (D2 interface,
 
 - [ ] 4. Project foundation, configuration and Store
   - [ ] 4.1 Create the project skeleton
-    - Create `pyproject.toml` (`requires-python >=3.12`, script entry `pixie`, `dev` dependency group with pytest, pytest-asyncio, hypothesis), `uv.lock` via `uv lock`, package `src/pixie_runtime/`, `tests/{unit,property,integration,smoke}/`, a `Clock` interface, SPDX headers, and a documented single test command (`make test` wrapping `uv run pytest tests/unit tests/property tests/integration`).
+    - Create `pyproject.toml` (`requires-python >=3.14.4,<3.15`, script entry `pixie`, `dev` dependency group with pytest, pytest-asyncio, hypothesis), `uv.lock` via `uv lock`, package `src/pixie_runtime/`, `tests/{unit,property,integration,smoke}/`, a `Clock` interface, SPDX headers, and a documented single test command (`make test` wrapping `uv run pytest tests/unit tests/property tests/integration`).
     - Add `.gitignore` entries excluding an in-repo Runtime_Home (`.pixie-dev/`) and keep audio, transcription and visualizer dependencies out of the manifest.
     - Dependencies are added with exact pins via uv.
     - `requires-python` (and any interpreter pin) follows the version recorded by task 2.1 (3.14.4, or 3.12 if uv cannot provide 3.14.4).
     - Operator decision (Python pin): `requires-python = ">=3.14.4,<3.15"` with `.python-version` 3.14.4. Task 2.1 recorded 3.14.4 (system `/usr/bin/python3.14`; uv can only download 3.14.10); the 3.12 fallback was not triggered.
-    - Replace the `requires-python >=3.12` text above with `>=3.14.4,<3.15`. Add a check (script or documented command, recorded in the dev log) of how uv chooses between the system `python3.14` and a downloaded interpreter, so the project environment does not silently use a different interpreter than the one the spike validated (3.14.4).
+    - (The `requires-python` text above now already says `>=3.14.4,<3.15`.) Add a check (script or documented command, recorded in the dev log) of how uv chooses between the system `python3.14` and a downloaded interpreter, so the project environment does not silently use a different interpreter than the one the spike validated (3.14.4).
     - _Requirements: 15.4, 16.13, 19.1, 20.6; Decisions: D31_
   - [ ] 4.2 Implement configuration and paths
     - Implement `config.py` and `paths.py`: Runtime_Home resolution (`PIXIE_HOME`, default `~/.pixie`), TOML load with unknown-key and range rejection naming the key, single authoritative Vault path entry, model and reasoning effort unset by default with no hardcoded model, secrets file loader, and `config/pixie.example.toml` with placeholders and commented model keys.

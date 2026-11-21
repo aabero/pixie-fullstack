@@ -169,3 +169,25 @@
 - Deviations from the design: none new; confirms the design's async `answer_approval` needs a non-SDK reader loop.
 - Tests: spike runs only, six transient units, all completed; units cleaned up. No unit tests (spike).
 - Follow-ups: design amendment batch still pending (Operator's call); task 5.2 interface decision; not verified: waits >240 s, file-change approvals, network after accept.
+
+## Task 3.1 follow-up - Operator decisions and design amendment batch (2026-11-21)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 1.4, 1.5, 3.16, 8.2, 8.15; Decisions D2, D25, D31
+- What changed: task 3.1 marked completed in tasks.md. At the Operator's request, `design.md` amended: `SandboxSpec` gains `read_roots` (named permission profile); instruction isolation relies on `project_doc_max_bytes = 0` plus `explicit` injection (design intro bullet and "Instruction isolation"); J-16, setup prerequisite, `requires-python` line and the overview now say `>=3.14.4,<3.15`; new paragraph on the Runtime-owned read loop for `answer_approval`.
+- Decisions (Operator): (1) adapter uses a direct app-server JSON-RPC client with a Runtime-owned read loop; (2) amendment batch applied; (3) `accept` always shows the exact command, never defaulted, no auto-accept; (4) follow-up spike for not-verified approval items runs before task 5.2.
+- Deviations from the design: none; the design was changed only per the batch. `requirements.md` untouched (8.15 and D25 unchanged).
+- Tests: not run (documentation edit); `validate_spec_format` on design.md passed. Backup of the pre-edit design at /tmp/design.md.bak-pre-batch.
+- Follow-ups: follow-up approvals spike (waits >240 s, file-change/MCP approvals, network after accept, `acceptWithExecpolicyAmendment`) before 5.2; requirements.md may need wording for the accept rule (8.x), Operator's call.
+
+## Task 3.1 follow-up - requirements wording and 4.1 pin text (2026-11-21)
+
+- Status: done
+- Spec: pixie-phase0-runtime
+- Requirements: 8.3, 8.4, 8.15 (new 8.19); Decisions D2, D25, D31
+- What changed: at the Operator's request, `requirements.md` gains criterion 8.19 (exact operation shown, no default answer, no automatic grant; a grant lifts the sandbox for that operation) appended after 8.18 with no renumbering; `tasks.md` task 4.1 now says `requires-python >=3.14.4,<3.15` in its first bullet.
+- Decisions (Operator): amend the requirements; correct the 4.1 pin text.
+- Deviations from the design: none.
+- Tests: not run (documentation edit).
+- Follow-ups: the follow-up approvals spike still precedes task 5.2, not task 4.1.
